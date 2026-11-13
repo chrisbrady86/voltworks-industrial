@@ -13,7 +13,9 @@ Everything needed to create the Voltworks project and upload the first file. Cop
 | Extra categories | Energy, Ore Processing |
 | License | MIT License |
 | Logo | `docs/images/logo.png` (400×400) |
-| Screenshots | `docs/images/test-world.png`, `crusher-gui.png`, `reactor-gui.png`, `tools-preview.png`, `ore-preview.png` |
+| Screenshots (Images tab) | From `docs/images/`: `power.png`, `machines.png`, `reactor.png`, `pipes.png`, `storage.png`, `crusher-gui.png`, `storage-terminal.png`, `guide-book.png` |
+
+The description below shows these same pictures straight from the GitHub repo (`raw.githubusercontent.com/.../main/docs/images/...`), so they appear once the images are pushed to GitHub.
 | Source link | https://github.com/chrisbrady86/voltworks-industrial |
 | Issues link | https://github.com/chrisbrady86/voltworks-industrial/issues |
 
@@ -60,6 +62,8 @@ First public release.
 
 Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through copper cables, and feed it to machines that double (or triple) your ore output.
 
+![Generators, a Solar Panel and batteries on a copper cable](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/power.png)
+
 ## ⚡ Power
 - **Generator** — burns any furnace fuel for 10 J/t (one coal = 4,000 J), including modded logs and planks.
 - **Solar Panel** — free power in daylight.
@@ -77,6 +81,10 @@ Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through 
 | Induction Furnace | Two independent lanes, each 4× furnace speed |
 | Uranium Refiner | Raw Uranium → Refined Uranium for fuel rods; reprocesses spent rods |
 
+![A line of Voltworks machines](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/machines.png)
+
+![The Crusher screen](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/crusher-gui.png)
+
 Every machine has **3 upgrade slots**:
 - **Speed Upgrade** — 30% faster each (uses more power)
 - **Capacity Upgrade** — +4,000 J internal storage each
@@ -90,13 +98,21 @@ The Reactor Chamber has a 3×3 grid for **Fuel Rods** and **Heat Vents**.
 - Let it reach 100% heat and it **melts down**. Spectacularly. Two layers of **Lead Blocks** contain the blast.
 - Server admins choose what a meltdown does: `/gamerule voltworks:reactor_meltdown destructive|contained|off`.
 
+![A running reactor inside two layers of lead](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/reactor.png)
+
 ## 📦 Item pipes
 - Clear glass **Item Pipes** — watch the items travel. Three speeds: tin, steel and gold.
 - Machines empty into chests by themselves. Start a line at a chest and it pulls from that chest automatically.
 - **Filter Pipes** sort items; the **Wrench** connects, disconnects and switches pipe arms.
 
+![Items travelling through glass pipes from chest to chest](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/pipes.png)
+
 ## 💾 Computer storage
 **Hard Drives** in a powered **Drive Rack**, a searchable **Storage Terminal**, a **Computer Crafter** that crafts straight from storage, and a **Storage Interface** so pipes can reach it all.
+
+![Drive Rack, Data Cable, Storage Terminal, Computer Crafter and Storage Interface](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/storage.png)
+
+![The Storage Terminal](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/storage-terminal.png)
 
 ## ⛏️ Tools
 - **Electric Drill** — pickaxe + shovel, faster than diamond.
@@ -110,6 +126,8 @@ The Reactor Chamber has a 3×3 grid for **Fuel Rods** and **Heat Vents**.
 - The **Voltworks Guide** explains everything in-game, with pictures of example builds.
 - **JEI** shows every machine recipe (optional).
 - Works with modded woods, leaves and sands, such as Biomes O' Plenty's.
+
+![A page of the Voltworks Guide](https://raw.githubusercontent.com/chrisbrady86/voltworks-industrial/main/docs/images/guide-book.png)
 
 ## 🪨 New ores
 **Tin** (mid-depth), **Lead** (deep) and **Uranium** (very deep, faintly glowing). All work with the Crusher for double output, and use common `c:` tags for compatibility with other mods.
