@@ -89,6 +89,7 @@
   "tooltip.voltworks.wrench.configure": "Mode: Configure sides",
   "tooltip.voltworks.wrench.hint1": "Right-click the air to switch mode; right-click a pipe arm to cycle it",
   "tooltip.voltworks.wrench.hint2": "Sneak + right-click a Voltworks block to pick it up",
+  "tooltip.voltworks.chainsaw": "Fells the whole tree (sneak to cut one log)",
   "side_mode.voltworks.none": "None",
   "side_mode.voltworks.input": "Input",
   "side_mode.voltworks.output": "Output",
@@ -109,5 +110,6 @@
   "guide.voltworks.page.8": "Wrench\n\nRight-click the air to switch Rotate / Configure.\n\nRotate: turn machines to face the side you click.\n\nSneak + right-click to pick up a Voltworks block.",
   "guide.voltworks.page.9": "Side Config\n\nIn Configure mode, right-click a machine side to cycle it:\n\nNone, Input, Output, Both.\n\nSettings follow the machine when you rotate it.",
   "guide.voltworks.page.10": "Tools\n\nElectric Drill, Chainsaw and Advanced Drill run on energy.\n\nRecharge them in the Charger.\n\nAdvanced Drill: sneak + right-click for 3x3 mining.",
-  "guide.voltworks.page.11": "Reactor\n\n3x3 grid of Fuel Rods and Heat Vents. Needs redstone. Pauses when its buffer is full.\n\nRods side by side make more power and much more heat.\n\nKeep heat below 100% or it melts down! A comparator reads heat."
+  "guide.voltworks.page.11": "Chainsaw\n\nCut one log and the whole tree comes down, as long as it has natural leaves.\n\nEach log costs power as usual.\n\nSneak to cut a single log.",
+  "guide.voltworks.page.12": "Reactor\n\n3x3 grid of Fuel Rods and Heat Vents. Needs redstone. Pauses when its buffer is full.\n\nRods side by side make more power and much more heat.\n\nKeep heat below 100% or it melts down! A comparator reads heat."
 }

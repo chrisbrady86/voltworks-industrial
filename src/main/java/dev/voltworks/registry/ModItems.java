@@ -2,6 +2,7 @@ package dev.voltworks.registry;
 
 import dev.voltworks.Voltworks;
 import dev.voltworks.item.AdvancedDrillItem;
+import dev.voltworks.item.ChainsawItem;
 import dev.voltworks.item.FuelRodItem;
 import dev.voltworks.item.GuideBookItem;
 import dev.voltworks.item.TooltipItem;
@@ -50,8 +51,8 @@ public final class ModItems {
 	public static final Item ELECTRIC_DRILL = register("electric_drill", p -> new PowerToolItem(
 			PowerToolItem.toolProperties(p, BlockTags.INCORRECT_FOR_IRON_TOOL, 8.0F, BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.MINEABLE_WITH_SHOVEL),
 			30_000, 50));
-	/** Iron-tier axe that also shreds leaves. 30,000 J, 50 J per block. */
-	public static final Item CHAINSAW = register("chainsaw", p -> new PowerToolItem(
+	/** Iron-tier axe that also shreds leaves and fells whole trees. 30,000 J, 50 J per block (or per log felled). */
+	public static final Item CHAINSAW = register("chainsaw", p -> new ChainsawItem(
 			PowerToolItem.toolProperties(p, BlockTags.INCORRECT_FOR_IRON_TOOL, 8.0F, BlockTags.MINEABLE_WITH_AXE, BlockTags.LEAVES),
 			30_000, 50));
 	/** Diamond-tier pickaxe + shovel with a 3x3 mode. 100,000 J, 80 J per block. */

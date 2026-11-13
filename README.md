@@ -22,7 +22,7 @@ An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it t
 - **Voltworks Guide** — in-game book (book + copper ingot) explaining everything; pages live in `tools/guide.txt`.
 - Machines show their charge on a front gauge.
 
-**Tools** — Electric Drill, Chainsaw, Advanced Drill (sneak + right-click for 3×3 mining). Run on energy, recharge in the **Charger**.
+**Tools** — Electric Drill, Chainsaw (fells whole trees; sneak to cut one log), Advanced Drill (sneak + right-click for 3×3 mining). Run on energy, recharge in the **Charger**.
 
 **Ores** — Tin, Lead, Uranium (with raw ores, dusts, ingots, storage blocks; `c:` convention tags).
 

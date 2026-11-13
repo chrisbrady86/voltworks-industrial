@@ -37,7 +37,7 @@ First public release.
 - Power: Generator, Solar Panel, Thermal Generator, Reactor Chamber; Copper Cable; Battery Box
 - Machines: Crusher, Electric Furnace, Alloy Smelter, Industrial Crusher, Induction Furnace
 - Machine upgrades: Speed, Capacity, Ejector
-- Power tools: Electric Drill, Chainsaw, Advanced Drill (3x3 mode), Charger
+- Power tools: Electric Drill, Chainsaw (tree felling), Advanced Drill (3x3 mode), Charger
 - New ores: Tin, Lead, Uranium
 ```
 
@@ -80,7 +80,7 @@ The Reactor Chamber has a 3×3 grid for **Fuel Rods** and **Heat Vents**.
 
 ## ⛏️ Power tools
 - **Electric Drill** — pickaxe + shovel, faster than diamond.
-- **Chainsaw** — cuts wood and leaves.
+- **Chainsaw** — cuts wood and leaves, and fells a whole tree from one cut (sneak to cut a single log).
 - **Advanced Drill** — diamond tier with a **3×3 mining mode** (sneak + right-click).
 - Tools never break: recharge them in the **Charger**.
 

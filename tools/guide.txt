@@ -69,6 +69,14 @@ Recharge them in the Charger.
 
 Advanced Drill: sneak + right-click for 3x3 mining.
 ---
+Chainsaw
+
+Cut one log and the whole tree comes down, as long as it has natural leaves.
+
+Each log costs power as usual.
+
+Sneak to cut a single log.
+---
 Reactor
 
 3x3 grid of Fuel Rods and Heat Vents. Needs redstone. Pauses when its buffer is full.

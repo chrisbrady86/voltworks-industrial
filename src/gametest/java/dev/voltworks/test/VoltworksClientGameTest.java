@@ -35,6 +35,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
@@ -321,6 +322,43 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (mined != 9) fails.add("Advanced Drill 3x3 should mine all 9 blocks (mined " + mined + ")");
 		if (used != 9 * 80) fails.add("3x3 should cost 9 x 80 J (used " + used + ")");
 		if (level.getBlockState(center.offset(0, 0, 1)).isAir()) fails.add("3x3 must not dig the block behind the wall");
+
+		// 4. Chainsaw tree felling. Built now (not at the start) so the natural leaves can't decay first.
+		//    Tree: oak trunk y=0..5, a diagonal branch (1,5,1)-(2,6,1), natural leaves on top, a birch log touching the trunk.
+		BlockState oak = Blocks.OAK_LOG.defaultBlockState();
+		BlockState naturalLeaves = Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.DISTANCE, 1);
+		BlockPos tree = o.offset(0, 0, -5);
+		for (int y = 0; y <= 5; y++) level.setBlockAndUpdate(tree.above(y), oak);
+		level.setBlockAndUpdate(tree.offset(1, 5, 1), oak);
+		level.setBlockAndUpdate(tree.offset(2, 6, 1), oak);
+		level.setBlockAndUpdate(tree.offset(0, 6, 0), naturalLeaves);
+		level.setBlockAndUpdate(tree.offset(-1, 5, 0), naturalLeaves);
+		level.setBlockAndUpdate(tree.offset(-1, 1, 0), Blocks.BIRCH_LOG.defaultBlockState());
+		//    Build: a 4-log oak pillar with player-placed (persistent) leaves on top. Not a tree.
+		BlockPos pillar = o.offset(3, 0, -7);
+		for (int y = 0; y <= 3; y++) level.setBlockAndUpdate(pillar.above(y), oak);
+		level.setBlockAndUpdate(pillar.above(4), Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true));
+
+		ItemStack chainsaw = full(ModItems.CHAINSAW);
+		player.setItemInHand(InteractionHand.MAIN_HAND, chainsaw);
+		int sawBefore = ((ChargeableItem) ModItems.CHAINSAW).getEnergy(chainsaw);
+		player.gameMode.destroyBlock(tree.above(1));
+		int sawUsed = sawBefore - ((ChargeableItem) ModItems.CHAINSAW).getEnergy(player.getMainHandItem());
+		int oakLeft = 0;
+		for (BlockPos p : List.of(tree.above(2), tree.above(3), tree.above(4), tree.above(5), tree.offset(1, 5, 1), tree.offset(2, 6, 1))) {
+			if (level.getBlockState(p).is(Blocks.OAK_LOG)) oakLeft++;
+		}
+		System.out.println("[voltworks-test] Chainsaw: tree logs left above the cut " + oakLeft + "/6, used " + sawUsed + " J");
+		if (oakLeft != 0) fails.add("Chainsaw should fell every log above the cut, branch included (" + oakLeft + " left)");
+		if (sawUsed != 7 * 50) fails.add("Felling 7 logs should cost 7 x 50 J (used " + sawUsed + ")");
+		if (!level.getBlockState(tree).is(Blocks.OAK_LOG)) fails.add("Chainsaw must not cut logs below the cut");
+		if (!level.getBlockState(tree.offset(-1, 1, 0)).is(Blocks.BIRCH_LOG)) fails.add("Chainsaw must only fell logs of the same kind");
+
+		player.gameMode.destroyBlock(pillar);
+		int pillarLeft = 0;
+		for (int y = 1; y <= 3; y++) if (level.getBlockState(pillar.above(y)).is(Blocks.OAK_LOG)) pillarLeft++;
+		System.out.println("[voltworks-test] Chainsaw on a log pillar with placed leaves: " + pillarLeft + "/3 logs left");
+		if (!level.getBlockState(pillar).isAir() || pillarLeft != 3) fails.add("Chainsaw should cut only one log of a build (" + pillarLeft + "/3 left)");
 		command(server, "gamemode spectator @a");
 	}
 

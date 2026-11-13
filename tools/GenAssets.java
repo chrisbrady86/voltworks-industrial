@@ -1206,6 +1206,7 @@ public class GenAssets {
 		lang.put("tooltip.voltworks.wrench.configure", "Mode: Configure sides");
 		lang.put("tooltip.voltworks.wrench.hint1", "Right-click the air to switch mode; right-click a pipe arm to cycle it");
 		lang.put("tooltip.voltworks.wrench.hint2", "Sneak + right-click a Voltworks block to pick it up");
+		lang.put("tooltip.voltworks.chainsaw", "Fells the whole tree (sneak to cut one log)");
 		for (String m : List.of("none", "input", "output", "both")) lang.put("side_mode.voltworks." + m, Character.toUpperCase(m.charAt(0)) + m.substring(1));
 		for (String sd : List.of("front", "back", "left", "right", "top", "bottom")) lang.put("side.voltworks." + sd, Character.toUpperCase(sd.charAt(0)) + sd.substring(1));
 
