@@ -243,7 +243,41 @@ public class GenAssets {
 	static int baseStone(int x, int y, Random r, boolean deep) {
 		BufferedImage base = deep ? deepslateBase : stoneBase;
 		if (base != null) return base.getRGB(x, y);
-		return deep ? shade(rgb(80, 80, 86), r.nextInt(17) - 8) : shade(rgb(125, 125, 125), r.nextInt(21) - 10);
+		return deep ? originalDeepslate(x, y) : originalStone(x, y);
+	}
+
+	/** Smooth tileable value noise (period 16) so the stone wraps seamlessly between blocks. */
+	static double noise(int x, int y, int cell, long seed) {
+		int n = 16 / cell;
+		double fx = (double) x / cell, fy = (double) y / cell;
+		int x0 = (int) Math.floor(fx), y0 = (int) Math.floor(fy);
+		double tx = fx - x0, ty = fy - y0;
+		tx = tx * tx * (3 - 2 * tx);
+		ty = ty * ty * (3 - 2 * ty);
+		double a = hash(Math.floorMod(x0, n), Math.floorMod(y0, n), seed), b = hash(Math.floorMod(x0 + 1, n), Math.floorMod(y0, n), seed);
+		double c = hash(Math.floorMod(x0, n), Math.floorMod(y0 + 1, n), seed), d = hash(Math.floorMod(x0 + 1, n), Math.floorMod(y0 + 1, n), seed);
+		return (a + (b - a) * tx) + ((c + (d - c) * tx) - (a + (b - a) * tx)) * ty;
+	}
+
+	static double hash(int x, int y, long seed) {
+		long h = seed ^ (x * 374761393L) ^ (y * 668265263L);
+		h = (h ^ (h >>> 13)) * 1274126177L;
+		return ((h ^ (h >>> 16)) & 0xFFFF) / 65535.0;
+	}
+
+	/** Original stone: mottled grey from two octaves of noise plus fine grain. */
+	static int originalStone(int x, int y) {
+		double v = 0.6 * noise(x, y, 8, 11) + 0.3 * noise(x, y, 4, 12) + 0.1 * noise(x, y, 2, 13);
+		int d = (int) Math.round((v - 0.5) * 44) + (hash(x, y, 14) > 0.85 ? -10 : 0);
+		return shade(rgb(124, 124, 126), d);
+	}
+
+	/** Original deepslate: darker, bluish, with horizontal strata. */
+	static int originalDeepslate(int x, int y) {
+		double strata = noise(x * 2 % 16, y, 2, 21);
+		double v = 0.5 * noise(x, y, 8, 22) + 0.5 * strata;
+		int d = (int) Math.round((v - 0.5) * 36) + (y % 4 == 0 ? -6 : 0) + (hash(x, y, 23) > 0.9 ? 8 : 0);
+		return shade(rgb(74, 74, 82), d);
 	}
 
 	/** Ore speckles: a few 2-3 pixel clusters with a highlight and a shadow. */
