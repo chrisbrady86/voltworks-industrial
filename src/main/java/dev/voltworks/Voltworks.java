@@ -113,6 +113,7 @@ public class Voltworks implements ModInitializer {
 					out.accept(ModItems.ELECTRIC_DRILL);
 					out.accept(ModItems.CHAINSAW);
 					out.accept(ModItems.ADVANCED_DRILL);
+					for (var tool : ModItems.STEEL_TOOLS) out.accept(tool);
 					out.accept(ModItems.SPEED_UPGRADE);
 					out.accept(ModItems.CAPACITY_UPGRADE);
 					out.accept(ModItems.EJECTOR_UPGRADE);

@@ -6,11 +6,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.BrushableBlock;
 
 /** Alloy Smelter recipes: two inputs (in either slot order) -> one output. */
 public final class AlloyRecipes {
@@ -50,9 +53,15 @@ public final class AlloyRecipes {
 		return new Input(s -> s.is(i), count, List.of(i));
 	}
 
-	/** Any sand in the c:sands tag: sand, red sand, and other mods' sands. */
+	/**
+	 * Any sand: the c:sands item tag, or a block in the minecraft:sand block tag (where mods such as Biomes O' Plenty
+	 * put their orange / white / black sands so cactus grows on them).
+	 */
 	private static Input sand(int count) {
-		return new Input(s -> s.is(ConventionalItemTags.SANDS), count, List.of(Items.SAND, Items.RED_SAND));
+		return new Input(s -> s.is(ConventionalItemTags.SANDS)
+				|| (s.getItem() instanceof BlockItem block && block.getBlock().defaultBlockState().is(BlockTags.SAND)
+						&& !(block.getBlock() instanceof BrushableBlock)), // not suspicious sand (archaeology)
+				count, List.of(Items.SAND, Items.RED_SAND));
 	}
 
 	private static Input coal(int count) {

@@ -35,7 +35,9 @@ An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it t
 
 **Tools** — Electric Drill, Chainsaw (fells whole trees; sneak to cut one log), Advanced Drill (sneak + right-click for 3×3 mining). Run on energy, recharge in the **Charger**.
 
-**Ores** — Tin, Lead (raw ores, dusts, ingots, storage blocks) and Uranium (raw ore, refined in the Uranium Refiner); `c:` convention tags.
+**Steel tools** — Steel Sword, Pickaxe, Axe, Shovel, Hoe and Spear: between iron and diamond (iron's mining level, 750 durability, faster and harder-hitting than iron). Vanilla tool recipes with Steel Ingots; repaired with steel.
+
+**Ores** — Tin, Lead (raw ores, dusts, ingots, storage blocks) and Uranium (raw ore, deep underground below Y 0, refined in the Uranium Refiner); `c:` convention tags.
 
 ## Building and running
 

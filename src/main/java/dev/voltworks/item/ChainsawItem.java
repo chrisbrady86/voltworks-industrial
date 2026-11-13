@@ -28,8 +28,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * Sneak to cut a single log.
  */
 public class ChainsawItem extends PowerToolItem {
-	/** Most logs felled at once (a big jungle or dark oak tree has around 100-150). */
-	public static final int MAX_LOGS = 256;
+	/** Most logs felled at once (a big jungle or dark oak tree has around 100-150; modded giants like redwoods more). */
+	public static final int MAX_LOGS = 512;
 	/** How far sideways from the cut a tree may spread. */
 	public static final int MAX_RADIUS = 12;
 
@@ -68,6 +68,15 @@ public class ChainsawItem extends PowerToolItem {
 	 * The logs of {@code log}'s kind connected to {@code origin} (which is already cut), lowest and nearest first.
 	 * Empty if none of them touch natural leaves, i.e. it isn't a tree.
 	 */
+	/**
+	 * Leaves a tree grew, not ones a player placed. Goes by the leaves tag rather than the block class, so modded
+	 * leaves (Biomes O' Plenty's and others) count even when they aren't vanilla LeavesBlocks.
+	 */
+	static boolean isNaturalLeaves(BlockState state) {
+		if (!state.is(BlockTags.LEAVES) && !(state.getBlock() instanceof LeavesBlock)) return false;
+		return !state.hasProperty(LeavesBlock.PERSISTENT) || !state.getValue(LeavesBlock.PERSISTENT);
+	}
+
 	public static List<BlockPos> findTree(Level level, BlockPos origin, Block log) {
 		List<BlockPos> found = new ArrayList<>();
 		Set<BlockPos> visited = new HashSet<>();
@@ -88,7 +97,7 @@ public class ChainsawItem extends PowerToolItem {
 				if (state.is(log)) {
 					found.add(next);
 					queue.add(next);
-				} else if (!leaves && state.getBlock() instanceof LeavesBlock && !state.getValue(LeavesBlock.PERSISTENT)) {
+				} else if (!leaves && isNaturalLeaves(state)) {
 					leaves = true;
 				}
 			}

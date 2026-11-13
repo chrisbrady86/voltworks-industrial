@@ -7,6 +7,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -35,7 +36,9 @@ public class GeneratorBlockEntity extends PoweredContainerBlockEntity {
 		if (progress <= 0 && energy + OUTPUT_PER_TICK <= capacity) {
 			ItemStack fuel = items.get(0);
 			int burn = fuel.isEmpty() ? 0
-					: ResolvableInt.getFromItem(fuel, DataComponents.COOKING_FUEL, CookingFuel::burnTime, this.getLootContext(level), 0);
+					: fuel.has(DataComponents.COOKING_FUEL)
+						? ResolvableInt.getFromItem(fuel, DataComponents.COOKING_FUEL, CookingFuel::burnTime, this.getLootContext(level), 0)
+						: woodBurnTime(fuel);
 			if (burn > 0) {
 				progress = progressTotal = Math.max(1, burn / BURN_SPEED);
 				ItemStackTemplate remainder = fuel.getItem().getCraftingRemainder();
@@ -64,9 +67,28 @@ public class GeneratorBlockEntity extends PoweredContainerBlockEntity {
 		}
 	}
 
+	/**
+	 * Furnace burn time (ticks) for modded wood that doesn't carry the vanilla fuel component, going by the vanilla
+	 * wood tags at vanilla burn times: logs, planks, stairs and fences 300, slabs 150, saplings 100. Lets Biomes O'
+	 * Plenty's (and other mods') logs and planks run a Generator. Nether wood (non_flammable_wood) never burns.
+	 */
+	public static int woodBurnTime(ItemStack stack) {
+		if (stack.has(DataComponents.COOKING_FUEL) || stack.is(ItemTags.NON_FLAMMABLE_WOOD)) return 0;
+		if (stack.is(ItemTags.LOGS_THAT_BURN) || stack.is(ItemTags.PLANKS) || stack.is(ItemTags.WOODEN_STAIRS)
+				|| stack.is(ItemTags.WOODEN_FENCES)) return 300;
+		if (stack.is(ItemTags.WOODEN_SLABS)) return 150;
+		if (stack.is(ItemTags.SAPLINGS)) return 100;
+		return 0;
+	}
+
+	/** Anything a furnace burns, plus modded wood found by tag ({@link #woodBurnTime}). */
+	public static boolean isFuel(ItemStack stack) {
+		return stack.has(DataComponents.COOKING_FUEL) || woodBurnTime(stack) > 0;
+	}
+
 	@Override
 	public boolean canPlaceItem(int slot, ItemStack stack) {
-		return stack.has(DataComponents.COOKING_FUEL);
+		return isFuel(stack);
 	}
 
 	@Override
@@ -86,7 +108,7 @@ public class GeneratorBlockEntity extends PoweredContainerBlockEntity {
 
 	@Override
 	protected boolean allowExtract(int slot, ItemStack stack) {
-		return !stack.has(DataComponents.COOKING_FUEL); // only pull out empty buckets
+		return !isFuel(stack); // only pull out empty buckets
 	}
 
 	@Override

@@ -35,7 +35,94 @@ public class GenAssets {
 		refining();
 		computers();
 		chunkLoader();
+		steelTools();
 		System.out.println("done");
+	}
+
+	// ---------------- steel tools ----------------
+	/**
+	 * Steel sword, pickaxe, axe, shovel, hoe and spear: blue-grey steel heads (darker and bluer than iron) with a
+	 * bright cutting edge, on wooden handles. Original art drawn with the same segment painter as the power tools.
+	 */
+	static void steelTools() throws Exception {
+		int wood = rgb(120, 84, 48);
+		Painter handle = (x, y, r) -> shade(wood, (x + y) % 3 == 0 ? -22 : 0);
+		Painter steel = (x, y, r) -> shade(rgb(128, 140, 158), (x - y) % 4 == 0 ? 26 : (x + y) % 5 == 0 ? -14 : 0);
+		Painter edge = (x, y, r) -> rgb(214, 224, 236);
+		Painter guard = (x, y, r) -> shade(rgb(70, 78, 92), x % 2 == 0 ? 10 : 0);
+
+		toolPng("item/steel_sword",
+				new Seg(1.5, 14.5, 4.5, 11.5, 0.9, 0.9, handle),
+				new Seg(2.5, 9.5, 6.5, 13.5, 0.8, 0.8, guard),
+				new Seg(5, 11, 14, 2, 1.5, 0.7, steel),
+				new Seg(6.5, 8.5, 13.5, 1.5, 0.45, 0.3, edge));
+		toolPng("item/steel_pickaxe",
+				new Seg(2, 14, 11, 5, 0.8, 0.8, handle),
+				new Seg(3.5, 2.5, 9, 4, 1.1, 1.2, steel),
+				new Seg(9, 4, 12, 7, 1.3, 1.3, steel),
+				new Seg(12, 7, 13.5, 12.5, 1.2, 1.1, steel),
+				new Seg(3.5, 2, 8.5, 3.2, 0.4, 0.4, edge));
+		toolPng("item/steel_axe",
+				new Seg(2, 14, 11.5, 4.5, 0.8, 0.8, handle),
+				new Seg(8.5, 3.5, 12.5, 7.5, 1.6, 1.6, steel),
+				new Seg(6.5, 2.5, 8.5, 7.5, 1.4, 1.4, steel),
+				new Seg(5.6, 2.6, 6.4, 7.4, 0.5, 0.5, edge));
+		toolPng("item/steel_shovel",
+				new Seg(2, 14, 10, 6, 0.8, 0.8, handle),
+				new Seg(9.5, 6.5, 12.5, 3.5, 2.2, 1.9, steel),
+				new Seg(12.5, 2.5, 14, 4, 0.5, 0.5, edge));
+		toolPng("item/steel_hoe",
+				new Seg(2, 14, 11, 5, 0.8, 0.8, handle),
+				new Seg(11.5, 4.5, 6.5, 2.5, 1.0, 1.0, steel),
+				new Seg(6, 2, 5.5, 4.5, 0.6, 0.6, edge));
+		toolPng("item/steel_spear",
+				new Seg(1.5, 14.5, 10.5, 5.5, 0.7, 0.7, handle),
+				new Seg(9, 7, 10.5, 5.5, 1.1, 1.1, guard),
+				new Seg(10, 6, 14.5, 1.5, 1.5, 0.3, steel),
+				new Seg(11, 5, 14.2, 1.8, 0.4, 0.2, edge));
+
+		Map<String, String> lang = new LinkedHashMap<>();
+		for (String tool : List.of("sword", "pickaxe", "axe", "shovel", "hoe")) {
+			String item = "steel_" + tool;
+			write("assets/voltworks/models/item/" + item + ".json",
+					"{ \"parent\": \"minecraft:item/handheld\", \"textures\": { \"layer0\": \"voltworks:item/" + item + "\" } }");
+			itemDef(item, "voltworks:item/" + item);
+			lang.put("item.voltworks." + item, "Steel " + Character.toUpperCase(tool.charAt(0)) + tool.substring(1));
+		}
+		// Spear: the flat icon in GUIs and on the ground, vanilla's held-spear pose in hand
+		write("assets/voltworks/models/item/steel_spear.json",
+				"{ \"parent\": \"minecraft:item/generated\", \"textures\": { \"layer0\": \"voltworks:item/steel_spear\" } }");
+		write("assets/voltworks/models/item/steel_spear_in_hand.json",
+				"{ \"parent\": \"minecraft:item/spear_in_hand\", \"textures\": { \"layer0\": \"voltworks:item/steel_spear\" } }");
+		write("assets/voltworks/items/steel_spear.json", """
+			{ "model": { "type": "minecraft:select", "property": "minecraft:display_context",
+			    "cases": [ { "when": ["gui", "ground", "fixed", "on_shelf"],
+			                 "model": { "type": "minecraft:model", "model": "voltworks:item/steel_spear" } } ],
+			    "fallback": { "type": "minecraft:model", "model": "voltworks:item/steel_spear_in_hand" } },
+			  "swap_animation_scale": 1.95 }
+			""");
+		lang.put("item.voltworks.steel_spear", "Steel Spear");
+
+		// Vanilla shapes with steel ingots (any c:ingots/steel) and sticks
+		tag("item", "voltworks", "steel_tool_materials", "#c:ingots/steel");
+		String[][] recipes = {{"sword", "X", "X", "#"}, {"pickaxe", "XXX", " # ", " # "}, {"axe", "XX", "X#", " #"},
+				{"shovel", "X", "#", "#"}, {"hoe", "XX", " #", " #"}, {"spear", "  X", " # ", "#  "}};
+		for (String[] rcp : recipes) {
+			shaped("steel_" + rcp[0], 1, Arrays.copyOfRange(rcp, 1, rcp.length), "X", "#voltworks:steel_tool_materials", "#", "minecraft:stick");
+		}
+		// Vanilla tool tags: enchanting tables, anvils and other mods treat them as proper tools
+		tag("item", "minecraft", "swords", "voltworks:steel_sword");
+		tag("item", "minecraft", "pickaxes", "voltworks:steel_pickaxe");
+		tag("item", "minecraft", "axes", "voltworks:steel_axe");
+		tag("item", "minecraft", "shovels", "voltworks:steel_shovel");
+		tag("item", "minecraft", "hoes", "voltworks:steel_hoe");
+		tag("item", "minecraft", "spears", "voltworks:steel_spear");
+
+		Path langFile = res.resolve("assets/voltworks/lang/en_us.json");
+		String json = Files.readString(langFile).stripTrailing();
+		StringBuilder sb = new StringBuilder(json.substring(0, json.lastIndexOf('}')).stripTrailing());
+		for (var e : lang.entrySet()) sb.append(",\n  ").append(jsonString(e.getKey())).append(": ").append(jsonString(e.getValue()));
+		Files.writeString(langFile, sb.append("\n}\n").toString());
 	}
 
 	// ---------------- nuclear ----------------
@@ -242,7 +329,7 @@ public class GenAssets {
 			new Metal("tin", rgb(214, 222, 230), "needs_stone_tool", 9, 12, -16, 96),
 			new Metal("lead", rgb(104, 100, 140), "needs_iron_tool", 8, 7, -64, 40),
 			// Uranium: rare and deep, iron pickaxe, faintly glowing.
-			new Metal("uranium", rgb(120, 210, 70), "needs_iron_tool", 4, 4, -64, -8));
+			new Metal("uranium", rgb(120, 210, 70), "needs_iron_tool", 6, 6, -64, 0));
 	static final List<String> ORE_BLOCKS = List.of("tin_ore", "deepslate_tin_ore", "lead_ore", "deepslate_lead_ore", "uranium_ore", "deepslate_uranium_ore");
 
 	static int baseStone(int x, int y, Random r, boolean deep) {

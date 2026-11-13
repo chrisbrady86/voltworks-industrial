@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["XX", "X#", " #"],
+  "key": { "X": "#voltworks:steel_tool_materials", "#": "minecraft:stick" },
+  "result": { "id": "voltworks:steel_axe", "count": 1 } }

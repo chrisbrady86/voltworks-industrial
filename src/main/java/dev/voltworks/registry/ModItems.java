@@ -16,7 +16,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ToolMaterial;
 
 public final class ModItems {
 	public static final Item IRON_DUST = register("iron_dust");
@@ -68,6 +70,20 @@ public final class ModItems {
 	public static final Item ADVANCED_DRILL = register("advanced_drill", p -> new AdvancedDrillItem(
 			PowerToolItem.toolProperties(p, BlockTags.INCORRECT_FOR_DIAMOND_TOOL, 12.0F, BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.MINEABLE_WITH_SHOVEL),
 			100_000, 80));
+
+	// Steel tools: between iron and diamond. They mine what iron mines (not obsidian), last three times as long,
+	// dig a little faster and hit a little harder. Repaired with steel ingots (the voltworks:steel_tool_materials tag).
+	public static final TagKey<Item> STEEL_TOOL_MATERIALS = TagKey.create(Registries.ITEM, Voltworks.id("steel_tool_materials"));
+	public static final ToolMaterial STEEL = new ToolMaterial(BlockTags.INCORRECT_FOR_IRON_TOOL, 750, 7.0F, 2.5F, 12, STEEL_TOOL_MATERIALS);
+	public static final Item STEEL_SWORD = register("steel_sword", p -> new Item(p.sword(STEEL, 3.0F, -2.4F)));
+	public static final Item STEEL_PICKAXE = register("steel_pickaxe", p -> new Item(p.pickaxe(STEEL, 1.0F, -2.8F)));
+	public static final Item STEEL_AXE = register("steel_axe", p -> new Item(p.axe(STEEL, 5.5F, -3.05F)));
+	public static final Item STEEL_SHOVEL = register("steel_shovel", p -> new Item(p.shovel(STEEL, 1.5F, -3.0F)));
+	public static final Item STEEL_HOE = register("steel_hoe", p -> new Item(p.hoe(STEEL, -2.5F, -0.5F)));
+	/** Spear stats halfway between the vanilla iron and diamond spears. */
+	public static final Item STEEL_SPEAR = register("steel_spear", p -> new Item(
+			p.spear(STEEL, 1.0F, 1.0125F, 0.55F, 2.75F, 10.5F, 6.625F, 5.1F, 10.625F, 4.6F)));
+	public static final Item[] STEEL_TOOLS = {STEEL_SWORD, STEEL_PICKAXE, STEEL_AXE, STEEL_SHOVEL, STEEL_HOE, STEEL_SPEAR};
 
 	private ModItems() {
 	}

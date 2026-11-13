@@ -171,5 +171,11 @@
   "guide.voltworks.page.11": "Uranium\n@items uranium_refiner refined_uranium fuel_rod depleted_fuel_rod\nThe Uranium Refiner turns Raw Uranium into Refined Uranium for Fuel Rods.\n\nSpent rods go back into the Refiner for more uranium, or into a Crusher for their lead.",
   "guide.voltworks.page.12": "Reactor\n@image reactor\n@items reactor_chamber fuel_rod heat_vent lead_block\nFill the grid with Fuel Rods and Heat Vents and give it redstone. Rods side by side: more power, far more heat.\n\nAt 100% heat it melts down! Two layers of Lead Blocks contain the blast.",
   "guide.voltworks.page.13": "Computer Storage\n@image storage\n@items drive_rack small_hard_drive data_cable storage_terminal computer_crafter\nPut Hard Drives in a powered Drive Rack and link it with Data Cable.\n\nStorage Terminal: search, take and store. Computer Crafter: crafts straight from storage.",
-  "guide.voltworks.page.14": "Storage Interface\n@items storage_interface filter_pipe item_pipe\nLets item pipes reach your storage.\n\nA plain arm puts items in. An Extract arm pulls them out; add a Filter Pipe to choose which.\n\nExample: Interface, Filter (Raw Tin), Crusher, and a pipe back for the dust."
+  "guide.voltworks.page.14": "Storage Interface\n@items storage_interface filter_pipe item_pipe\nLets item pipes reach your storage.\n\nA plain arm puts items in. An Extract arm pulls them out; add a Filter Pipe to choose which.\n\nExample: Interface, Filter (Raw Tin), Crusher, and a pipe back for the dust.",
+  "item.voltworks.steel_sword": "Steel Sword",
+  "item.voltworks.steel_pickaxe": "Steel Pickaxe",
+  "item.voltworks.steel_axe": "Steel Axe",
+  "item.voltworks.steel_shovel": "Steel Shovel",
+  "item.voltworks.steel_hoe": "Steel Hoe",
+  "item.voltworks.steel_spear": "Steel Spear"
 }

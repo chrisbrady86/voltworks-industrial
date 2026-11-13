@@ -14,6 +14,7 @@ import dev.voltworks.storage.DriveContents;
 import dev.voltworks.storage.StorageNetwork;
 import net.minecraft.core.registries.BuiltInRegistries;
 import dev.voltworks.block.entity.FilterPipeBlockEntity;
+import dev.voltworks.block.entity.GeneratorBlockEntity;
 import dev.voltworks.block.entity.ItemPipeBlockEntity;
 import dev.voltworks.block.entity.PoweredContainerBlockEntity;
 import dev.voltworks.block.entity.ReactorBlockEntity;
@@ -819,6 +820,31 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		// Rows 9-10: chest feeding a crusher (unpowered, so the raw iron waits in its input slot)
 		expect(fails, level, l.offset(3, 0, 24), 0, Items.RAW_IRON, 8, "Line laid from a chest -> pipes -> crusher input: 8 raw iron");
 		expect(fails, level, l.offset(0, 0, 26), 0, Items.RAW_IRON, 8, "Chest added to a line that reaches a machine keeps its 8 raw iron");
+
+		// Generator fuel: anything a furnace burns, plus wood by tag (modded logs without the fuel component); never nether wood
+		if (!GeneratorBlockEntity.isFuel(new ItemStack(Items.OAK_LOG)) || !GeneratorBlockEntity.isFuel(new ItemStack(Items.COAL))) {
+			fails.add("Generator should take oak logs and coal");
+		}
+		if (GeneratorBlockEntity.isFuel(new ItemStack(Items.CRIMSON_STEM)) || GeneratorBlockEntity.isFuel(new ItemStack(Items.CRIMSON_PLANKS))) {
+			fails.add("Generator must not take nether wood");
+		}
+		if (GeneratorBlockEntity.isFuel(new ItemStack(Items.STONE))) fails.add("Generator must not take stone");
+
+		// Steel tools: iron's mining level (diamond ore yes, obsidian no), 750 durability, steel repairs them, vanilla tool tags
+		ItemStack steelPick = new ItemStack(ModItems.STEEL_PICKAXE);
+		if (!steelPick.isCorrectToolForDrops(Blocks.DIAMOND_ORE.defaultBlockState())) fails.add("Steel pickaxe should mine diamond ore");
+		if (steelPick.isCorrectToolForDrops(Blocks.OBSIDIAN.defaultBlockState())) fails.add("Steel pickaxe must not mine obsidian");
+		if (steelPick.getMaxDamage() != 750) fails.add("Steel tools should have 750 durability (" + steelPick.getMaxDamage() + ")");
+		if (!steelPick.isValidRepairItem(new ItemStack(ModItems.STEEL_INGOT))) fails.add("Steel ingots should repair steel tools");
+		if (steelPick.getDestroySpeed(Blocks.STONE.defaultBlockState()) <= new ItemStack(Items.IRON_PICKAXE).getDestroySpeed(Blocks.STONE.defaultBlockState())) {
+			fails.add("Steel pickaxe should dig faster than iron");
+		}
+		if (!new ItemStack(ModItems.STEEL_SWORD).is(net.minecraft.tags.ItemTags.SWORDS) || !new ItemStack(ModItems.STEEL_AXE).is(net.minecraft.tags.ItemTags.AXES)) {
+			fails.add("Steel sword and axe should be in the vanilla sword / axe tags (enchanting)");
+		}
+		if (!new ItemStack(ModItems.STEEL_AXE).has(net.minecraft.core.component.DataComponents.BLOCK_TRANSFORMER)) {
+			fails.add("Steel axe should strip logs like a vanilla axe");
+		}
 
 		// Rows 7-8: tiers. Basic (4/s) is still busy with 256 items; express (64/s) has finished.
 		int mixedMoved = count((Container) level.getBlockEntity(l.offset(4, 0, 28)), Items.COBBLESTONE);
