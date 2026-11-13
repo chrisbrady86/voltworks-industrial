@@ -15,7 +15,16 @@ Cables & Batteries
 
 Copper Cable carries power between blocks.
 
-Power goes to machines first, then to Battery Boxes (100,000 J each). The front gauge shows the charge.
+Power goes to machines first, then to batteries. The front gauge shows the charge.
+---
+Batteries
+
+Small: 25,000 J
+Medium: 100,000 J
+Large: 1,000,000 J
+Huge: 10,000,000 J
+
+Bigger batteries also charge and discharge faster.
 ---
 Machines
 
@@ -35,15 +44,32 @@ Upgrades (3 slots): Speed, Capacity, Ejector.
 ---
 Item Pipes
 
-Pipes join chests, hoppers and machines.
+Glass pipes join chests, hoppers and machines. You can watch items travel.
 
-A pipe touching a machine output starts in Extract mode (striped collar) and pulls items out every half second.
+Machine to chest just works: pipes pull finished items out of machines into chests.
 ---
 Item Pipes
 
-Items go to the nearest inventory on the network that accepts them, taking turns.
+To pull from a chest, sneak + right-click that pipe arm with the wrench: Extract (striped collar).
 
-Wrench a pipe arm to cycle it: connected, extract, disabled.
+Right-click an arm with the wrench to connect or disconnect it.
+---
+Pipe Tiers
+
+Item Pipe: 4 items/s.
+Fast (red): 16 items/s.
+Express (gold): 64 items/s, near instant.
+
+The pipe touching the source sets the rate.
+---
+Filter Pipe
+
+Right-click it to set up to 9 items.
+
+Allow: only those pass.
+Deny: those are blocked.
+
+Put one in front of a chest to sort into it.
 ---
 Wrench
 
@@ -77,6 +103,20 @@ Each log costs power as usual.
 
 Sneak to cut a single log.
 ---
+Uranium
+
+Uranium can't be smelted or crushed.
+
+The Uranium Refiner enriches Raw Uranium into Refined Uranium. It needs lots of power.
+
+Fuel Rods are made from Refined Uranium.
+---
+Reprocessing
+
+Put a spent Fuel Rod in the Uranium Refiner to get one Refined Uranium back.
+
+Or crush it to recover its lead.
+---
 Reactor
 
 3x3 grid of Fuel Rods and Heat Vents. Needs redstone. Pauses when its buffer is full.
@@ -84,3 +124,33 @@ Reactor
 Rods side by side make more power and much more heat.
 
 Keep heat below 100% or it melts down! A comparator reads heat.
+---
+Computer Storage
+
+Smelt 2 sand + coal in the Alloy Smelter for Silicon, then craft Silicon Chips.
+
+Hard Drives hold items: 1K, 4K, 16K or 64K, up to 63 kinds each.
+---
+Drive Rack
+
+Holds 8 Hard Drives. Needs power: 1 J/t plus 1 per drive.
+
+Link racks, terminals and crafters with Data Cable (or let them touch).
+---
+Storage Terminal
+
+See and search everything stored.
+
+Click: take a stack.
+Right-click: half.
+Shift-click: to inventory.
+
+Click holding an item to store it.
+---
+Computer Crafter
+
+Click list items to fill the 3x3 pattern, then press x1, x8 or x64.
+
+Ingredients come from storage; results go back into it.
+
+More space: add drives or racks.

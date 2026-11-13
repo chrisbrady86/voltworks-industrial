@@ -61,10 +61,6 @@ public final class CrusherRecipes {
 		ore(ModItems.RAW_LEAD, ModItems.LEAD_DUST, 2);
 		add(ModItems.LEAD_INGOT, ModItems.LEAD_DUST, 1);
 
-		ore(ModBlocks.URANIUM_ORE, ModItems.URANIUM_DUST, 2);
-		ore(ModBlocks.DEEPSLATE_URANIUM_ORE, ModItems.URANIUM_DUST, 2);
-		ore(ModItems.RAW_URANIUM, ModItems.URANIUM_DUST, 2);
-		add(ModItems.URANIUM_INGOT, ModItems.URANIUM_DUST, 1);
 		add(ModItems.DEPLETED_FUEL_ROD, ModItems.LEAD_DUST, 4); // recycle the casing
 
 		ore(Items.COAL_ORE, Items.COAL, 2);

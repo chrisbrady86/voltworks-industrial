@@ -35,8 +35,9 @@ import org.jspecify.annotations.Nullable;
  *   <li>Right-click in the air: switch between Rotate and Configure mode.</li>
  *   <li>Rotate mode, right-click a block: turn it (machines face the side you clicked).</li>
  *   <li>Configure mode, right-click a machine side: cycle that side through none / input / output / both.</li>
- *   <li>Right-click a pipe (either mode): cycle the connection you clicked (connected / extract / disabled).</li>
- *   <li>Sneak + right-click a Voltworks block: pick it up into your inventory.</li>
+ *   <li>Right-click a pipe arm (either mode): connect or disconnect it. Joins between two pipes change on both.</li>
+ *   <li>Sneak + right-click a pipe arm touching an inventory: toggle Extract (pull items out of it).</li>
+ *   <li>Sneak + right-click any other Voltworks block: pick it up into your inventory.</li>
  * </ul>
  */
 public class WrenchItem extends Item {
@@ -69,10 +70,11 @@ public class WrenchItem extends Item {
 		}
 		BlockState state = level.getBlockState(pos);
 		Component message;
-		if (player.isSecondaryUseActive()) {
+		if (state.getBlock() instanceof ItemPipeBlock) {
+			Direction side = pipeSideAt(context.getClickLocation(), pos, context.getClickedFace());
+			message = player.isSecondaryUseActive() ? toggleExtract(level, pos, side) : togglePipe(level, pos, side);
+		} else if (player.isSecondaryUseActive()) {
 			message = dismantle(level, pos, player) ? null : Component.translatable("message.voltworks.wrench.cant_pick_up");
-		} else if (state.getBlock() instanceof ItemPipeBlock) {
-			message = cyclePipe(level, pos, pipeSideAt(context.getClickLocation(), pos, context.getClickedFace()));
 		} else if (isConfigureMode(context.getItemInHand())) {
 			message = configure(level, pos, context.getClickedFace());
 		} else {
@@ -138,26 +140,30 @@ public class WrenchItem extends Item {
 		return Component.translatable("message.voltworks.wrench.side", machine.sideOf(face).label(), mode.label());
 	}
 
-	/** Cycle a pipe connection: to a pipe, connected/disabled; to an inventory, connected/extract/disabled. */
-	public static Component cyclePipe(Level level, BlockPos pos, Direction dir) {
-		BlockState state = level.getBlockState(pos);
+	/** Plain click on a pipe arm: disconnect it, or connect it if it's disconnected. Joins between pipes change on both pipes. */
+	public static Component togglePipe(Level level, BlockPos pos, Direction dir) {
 		BlockPos npos = pos.relative(dir);
 		BlockState nstate = level.getBlockState(npos);
 		if (!ItemPipeBlock.canConnect(level, npos, nstate)) {
 			return Component.translatable("message.voltworks.pipe.nothing");
 		}
-		Side current = ItemPipeBlock.get(state, dir);
-		boolean toPipe = nstate.getBlock() instanceof ItemPipeBlock;
-		Side next = switch (current) {
-			case NONE, DISABLED -> Side.CONNECTED;
-			case CONNECTED -> toPipe ? Side.DISABLED : Side.EXTRACT;
-			case EXTRACT -> Side.DISABLED;
-		};
+		Side next = ItemPipeBlock.get(level.getBlockState(pos), dir).isOpen() ? Side.DISABLED : Side.CONNECTED;
 		setPipeSide(level, pos, dir, next);
-		if (toPipe) {
-			// Keep both pipes in agreement so a cut-off join stays cut off
-			setPipeSide(level, npos, dir.getOpposite(), next == Side.DISABLED ? Side.DISABLED : Side.CONNECTED);
+		if (nstate.getBlock() instanceof ItemPipeBlock) {
+			setPipeSide(level, npos, dir.getOpposite(), next); // keep both pipes in agreement
 		}
+		return Component.translatable("message.voltworks.pipe." + next.getSerializedName());
+	}
+
+	/** Sneak + click on a pipe arm touching an inventory: switch it between pulling items out (Extract) and not. */
+	public static Component toggleExtract(Level level, BlockPos pos, Direction dir) {
+		BlockPos npos = pos.relative(dir);
+		BlockState nstate = level.getBlockState(npos);
+		if (nstate.getBlock() instanceof ItemPipeBlock || !ItemPipeBlock.canConnect(level, npos, nstate)) {
+			return Component.translatable("message.voltworks.pipe.extract_needs_inventory");
+		}
+		Side next = ItemPipeBlock.get(level.getBlockState(pos), dir) == Side.EXTRACT ? Side.CONNECTED : Side.EXTRACT;
+		setPipeSide(level, pos, dir, next);
 		return Component.translatable("message.voltworks.pipe." + next.getSerializedName());
 	}
 
@@ -174,5 +180,6 @@ public class WrenchItem extends Item {
 				.withStyle(ChatFormatting.YELLOW));
 		builder.accept(Component.translatable("tooltip.voltworks.wrench.hint1").withStyle(ChatFormatting.GRAY));
 		builder.accept(Component.translatable("tooltip.voltworks.wrench.hint2").withStyle(ChatFormatting.GRAY));
+		builder.accept(Component.translatable("tooltip.voltworks.wrench.hint3").withStyle(ChatFormatting.GRAY));
 	}
 }

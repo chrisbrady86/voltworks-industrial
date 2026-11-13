@@ -1,2 +1,0 @@
-{ "type": "minecraft:crafting_shapeless", "ingredients": ["voltworks:uranium_block"],
-  "result": { "id": "voltworks:uranium_ingot", "count": 9 } }

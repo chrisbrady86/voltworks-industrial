@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["ICI", "CGC", "ICI"],
+  "key": { "I": "minecraft:iron_ingot", "C": "voltworks:silicon_chip", "G": "minecraft:gold_ingot" },
+  "result": { "id": "voltworks:medium_hard_drive", "count": 1 } }

@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["GGG", "CMC", "IRI"],
+  "key": { "G": "minecraft:glass", "C": "voltworks:silicon_chip", "M": "voltworks:machine_frame", "I": "minecraft:iron_ingot", "R": "minecraft:redstone" },
+  "result": { "id": "voltworks:storage_terminal", "count": 1 } }

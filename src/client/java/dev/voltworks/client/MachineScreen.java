@@ -1,5 +1,6 @@
 package dev.voltworks.client;
 
+import dev.voltworks.item.HardDriveItem;
 import dev.voltworks.menu.MachineMenu;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -89,6 +90,22 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
 				if (fillW > 0) {
 					g.fill(cx, cy, cx + fillW, cy + 6, 0xFF40C0FF);
 				}
+			}
+			case DRIVE_RACK -> {
+				// A fill bar under each drive, and whether the rack is powered (= its drives are online)
+				for (int i = 0; i < menu.kind.slotCount(); i++) {
+					Slot slot = menu.slots.get(i);
+					int bx = x + slot.x, by = y + slot.y + 18;
+					g.fill(bx, by, bx + 16, by + 3, DARK);
+					if (slot.getItem().getItem() instanceof HardDriveItem drive) {
+						float fill = (float) HardDriveItem.contents(slot.getItem()).total() / drive.size.capacity;
+						int w = Math.max(1, Math.round(fill * 16));
+						g.fill(bx, by, bx + w, by + 3, fill < 0.75F ? 0xFF40C0FF : fill < 0.95F ? 0xFFFFB020 : 0xFFFF4040);
+					}
+				}
+				boolean online = menu.getProgressFraction(0) > 0;
+				Component status = Component.translatable(online ? "gui.voltworks.rack.online" : "gui.voltworks.rack.offline");
+				g.text(font, status, x + imageWidth - 8 - font.width(status), y + 6, online ? 0xFF2A7A2A : 0xFFB02020, false);
 			}
 			case DUAL_PROCESSING -> {
 				arrow(g, x + 80, y + 25, menu.getProgressFraction(0));

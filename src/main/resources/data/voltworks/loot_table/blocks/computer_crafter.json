@@ -1,0 +1,4 @@
+{ "type": "minecraft:block", "pools": [ { "rolls": 1,
+  "condition": { "type": "minecraft:survives_explosion" },
+  "entries": [ { "type": "minecraft:item", "name": "voltworks:computer_crafter" } ] } ],
+  "random_sequence": "voltworks:blocks/computer_crafter" }

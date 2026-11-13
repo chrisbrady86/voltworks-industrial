@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["BCB", "LAL", "BCB"],
+  "key": { "B": "voltworks:large_battery", "C": "voltworks:circuit", "L": "voltworks:lead_block", "A": "voltworks:advanced_machine_frame" },
+  "result": { "id": "voltworks:huge_battery", "count": 1 } }

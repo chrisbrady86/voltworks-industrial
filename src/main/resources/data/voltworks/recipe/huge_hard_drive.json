@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["SCS", "CNC", "SCS"],
+  "key": { "S": "voltworks:steel_ingot", "C": "voltworks:silicon_chip", "N": "minecraft:netherite_scrap" },
+  "result": { "id": "voltworks:huge_hard_drive", "count": 1 } }

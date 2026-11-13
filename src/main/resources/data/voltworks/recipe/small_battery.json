@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["LRL", "RCR", "LRL"],
+  "key": { "L": "voltworks:lead_ingot", "R": "minecraft:redstone", "C": "minecraft:copper_ingot" },
+  "result": { "id": "voltworks:small_battery", "count": 1 } }

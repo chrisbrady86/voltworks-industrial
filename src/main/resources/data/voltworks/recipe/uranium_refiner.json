@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["SCS", "GAG", "SWS"],
+  "key": { "S": "voltworks:steel_ingot", "C": "voltworks:circuit", "G": "minecraft:glass", "A": "voltworks:advanced_machine_frame", "W": "minecraft:water_bucket" },
+  "result": { "id": "voltworks:uranium_refiner", "count": 1 } }

@@ -1,5 +1,10 @@
 package dev.voltworks;
 
+import dev.voltworks.menu.NetworkMenu;
+import dev.voltworks.network.StorageActionPayload;
+import dev.voltworks.network.StorageViewPayload;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import dev.voltworks.recipe.AlloyRecipes;
 import dev.voltworks.recipe.CrusherRecipes;
 import dev.voltworks.registry.ModBlockEntities;
@@ -34,6 +39,14 @@ public class Voltworks implements ModInitializer {
 		ModBlocks.init();
 		ModBlockEntities.init();
 		ModMenus.init();
+		// Storage terminal / crafter networking: the item list goes to the client, clicks in it come back
+		PayloadTypeRegistry.clientboundPlay().register(StorageViewPayload.TYPE, StorageViewPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(StorageActionPayload.TYPE, StorageActionPayload.CODEC);
+		ServerPlayNetworking.registerGlobalReceiver(StorageActionPayload.TYPE, (payload, context) -> {
+			if (context.player().containerMenu instanceof NetworkMenu menu && menu.containerId == payload.containerId()) {
+				menu.handleAction(context.player(), payload.item(), payload.action(), payload.slot());
+			}
+		});
 		CrusherRecipes.init();
 		AlloyRecipes.init();
 
@@ -44,10 +57,26 @@ public class Voltworks implements ModInitializer {
 					out.accept(ModItems.GUIDE);
 					out.accept(ModBlocks.GENERATOR);
 					out.accept(ModBlocks.SOLAR_PANEL);
+					out.accept(ModBlocks.SMALL_BATTERY);
 					out.accept(ModBlocks.BATTERY_BOX);
+					out.accept(ModBlocks.LARGE_BATTERY);
+					out.accept(ModBlocks.HUGE_BATTERY);
 					out.accept(ModBlocks.COPPER_CABLE);
 					out.accept(ModBlocks.ITEM_PIPE);
+					out.accept(ModBlocks.FAST_ITEM_PIPE);
+					out.accept(ModBlocks.EXPRESS_ITEM_PIPE);
+					out.accept(ModBlocks.FILTER_PIPE);
 					out.accept(ModItems.WRENCH);
+					out.accept(ModBlocks.DATA_CABLE);
+					out.accept(ModBlocks.DRIVE_RACK);
+					out.accept(ModBlocks.STORAGE_TERMINAL);
+					out.accept(ModBlocks.COMPUTER_CRAFTER);
+					out.accept(ModItems.SMALL_HARD_DRIVE);
+					out.accept(ModItems.MEDIUM_HARD_DRIVE);
+					out.accept(ModItems.LARGE_HARD_DRIVE);
+					out.accept(ModItems.HUGE_HARD_DRIVE);
+					out.accept(ModItems.SILICON);
+					out.accept(ModItems.SILICON_CHIP);
 					out.accept(ModBlocks.CRUSHER);
 					out.accept(ModBlocks.ELECTRIC_FURNACE);
 					out.accept(ModBlocks.MACHINE_FRAME);
@@ -57,6 +86,7 @@ public class Voltworks implements ModInitializer {
 					out.accept(ModBlocks.ALLOY_SMELTER);
 					out.accept(ModBlocks.THERMAL_GENERATOR);
 					out.accept(ModBlocks.INDUSTRIAL_CRUSHER);
+					out.accept(ModBlocks.URANIUM_REFINER);
 					out.accept(ModBlocks.INDUCTION_FURNACE);
 					out.accept(ModBlocks.ADVANCED_MACHINE_FRAME);
 					out.accept(ModItems.STEEL_INGOT);
@@ -85,8 +115,8 @@ public class Voltworks implements ModInitializer {
 					out.accept(ModBlocks.URANIUM_ORE);
 					out.accept(ModBlocks.DEEPSLATE_URANIUM_ORE);
 					out.accept(ModItems.RAW_URANIUM);
-					out.accept(ModItems.URANIUM_DUST);
-					out.accept(ModItems.URANIUM_INGOT);
+
+					out.accept(ModItems.REFINED_URANIUM);
 					out.accept(ModBlocks.URANIUM_BLOCK);
 					out.accept(ModBlocks.REACTOR_CHAMBER);
 					out.accept(ModItems.FUEL_ROD);

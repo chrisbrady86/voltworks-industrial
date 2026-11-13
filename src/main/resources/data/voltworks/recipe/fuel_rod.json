@@ -1,4 +1,4 @@
 { "type": "minecraft:crafting_shaped",
   "pattern": ["LUL", "LUL", "LUL"],
-  "key": { "L": "voltworks:lead_ingot", "U": "voltworks:uranium_ingot" },
+  "key": { "L": "voltworks:lead_ingot", "U": "voltworks:refined_uranium" },
   "result": { "id": "voltworks:fuel_rod", "count": 1 } }

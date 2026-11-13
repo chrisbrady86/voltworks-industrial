@@ -1,0 +1,3 @@
+{ "type": "minecraft:crafting_shapeless",
+  "ingredients": [ "voltworks:storage_terminal", "minecraft:crafting_table", "voltworks:silicon_chip", "voltworks:silicon_chip" ],
+  "result": { "id": "voltworks:computer_crafter", "count": 1 } }

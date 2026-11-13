@@ -1,2 +1,2 @@
 { "type": "minecraft:crafting_shaped", "pattern": ["###", "###", "###"],
-  "key": { "#": "voltworks:uranium_ingot" }, "result": { "id": "voltworks:uranium_block" } }
+  "key": { "#": "voltworks:refined_uranium" }, "result": { "id": "voltworks:uranium_block" } }

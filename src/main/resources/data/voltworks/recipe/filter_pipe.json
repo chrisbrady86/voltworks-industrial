@@ -1,0 +1,3 @@
+{ "type": "minecraft:crafting_shapeless",
+  "ingredients": [ "voltworks:item_pipe", "minecraft:comparator" ],
+  "result": { "id": "voltworks:filter_pipe", "count": 1 } }

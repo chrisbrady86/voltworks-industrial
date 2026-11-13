@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["BCB", "SAS", "BCB"],
+  "key": { "B": "voltworks:battery_box", "C": "voltworks:circuit", "S": "voltworks:steel_ingot", "A": "voltworks:advanced_machine_frame" },
+  "result": { "id": "voltworks:large_battery", "count": 1 } }

@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["ICI", "ICI", "IRI"],
+  "key": { "I": "minecraft:iron_ingot", "C": "voltworks:silicon_chip", "R": "minecraft:redstone" },
+  "result": { "id": "voltworks:small_hard_drive", "count": 1 } }

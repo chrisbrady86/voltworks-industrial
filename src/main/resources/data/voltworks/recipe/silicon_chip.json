@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["SSS", "RCR"],
+  "key": { "S": "voltworks:silicon", "R": "minecraft:redstone", "C": "minecraft:copper_ingot" },
+  "result": { "id": "voltworks:silicon_chip", "count": 3 } }

@@ -2,6 +2,9 @@ package dev.voltworks.registry;
 
 import dev.voltworks.Voltworks;
 import dev.voltworks.block.CableBlock;
+import dev.voltworks.block.ComputerBlock;
+import dev.voltworks.block.DataCableBlock;
+import dev.voltworks.block.FilterPipeBlock;
 import dev.voltworks.block.ItemPipeBlock;
 import dev.voltworks.block.MachineBlock;
 import java.util.function.Function;
@@ -22,6 +25,16 @@ public final class ModBlocks {
 	public static final Block MACHINE_FRAME = register("machine_frame", Block::new, metal());
 	public static final Block ITEM_PIPE = register("item_pipe", ItemPipeBlock::new,
 			BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(0.5F).sound(SoundType.COPPER).noOcclusion());
+	public static final Block FAST_ITEM_PIPE = register("fast_item_pipe", p -> new ItemPipeBlock(p, ItemPipeBlock.Tier.FAST), pipe());
+	public static final Block EXPRESS_ITEM_PIPE = register("express_item_pipe", p -> new ItemPipeBlock(p, ItemPipeBlock.Tier.EXPRESS), pipe());
+	public static final Block FILTER_PIPE = register("filter_pipe", FilterPipeBlock::new, pipe());
+
+	// Computer storage
+	public static final Block DATA_CABLE = register("data_cable", DataCableBlock::new,
+			BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLUE).strength(0.4F).sound(SoundType.COPPER).noOcclusion());
+	public static final Block DRIVE_RACK = computer("drive_rack", () -> ModBlockEntities.DRIVE_RACK);
+	public static final Block STORAGE_TERMINAL = computer("storage_terminal", () -> ModBlockEntities.STORAGE_TERMINAL);
+	public static final Block COMPUTER_CRAFTER = computer("computer_crafter", () -> ModBlockEntities.COMPUTER_CRAFTER);
 	public static final Block COPPER_CABLE = register("copper_cable", CableBlock::new,
 			BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).strength(0.4F).sound(SoundType.COPPER).noOcclusion());
 	public static final Block GENERATOR = machine("generator", () -> ModBlockEntities.GENERATOR,
@@ -29,7 +42,10 @@ public final class ModBlocks {
 	public static final Block CRUSHER = machine("crusher", () -> ModBlockEntities.CRUSHER, metal());
 	public static final Block ELECTRIC_FURNACE = machine("electric_furnace", () -> ModBlockEntities.ELECTRIC_FURNACE,
 			metal().lightLevel(state -> state.getValue(MachineBlock.LIT) ? 10 : 0));
+	public static final Block SMALL_BATTERY = machine("small_battery", () -> ModBlockEntities.BATTERY, metal());
 	public static final Block BATTERY_BOX = machine("battery_box", () -> ModBlockEntities.BATTERY, metal());
+	public static final Block LARGE_BATTERY = machine("large_battery", () -> ModBlockEntities.BATTERY, metal().strength(5.0F, 8.0F));
+	public static final Block HUGE_BATTERY = machine("huge_battery", () -> ModBlockEntities.BATTERY, metal().strength(5.0F, 8.0F));
 	public static final Block SOLAR_PANEL = machine("solar_panel", () -> ModBlockEntities.SOLAR_PANEL, metal());
 
 	// Tier 2
@@ -37,6 +53,8 @@ public final class ModBlocks {
 	public static final Block ALLOY_SMELTER = machine("alloy_smelter", () -> ModBlockEntities.ALLOY_SMELTER,
 			metal().lightLevel(state -> state.getValue(MachineBlock.LIT) ? 10 : 0));
 	public static final Block INDUSTRIAL_CRUSHER = machine("industrial_crusher", () -> ModBlockEntities.INDUSTRIAL_CRUSHER, metal().strength(5.0F, 8.0F));
+	public static final Block URANIUM_REFINER = machine("uranium_refiner", () -> ModBlockEntities.URANIUM_REFINER,
+			metal().strength(5.0F, 8.0F).lightLevel(state -> state.getValue(MachineBlock.LIT) ? 7 : 0));
 	public static final Block INDUCTION_FURNACE = machine("induction_furnace", () -> ModBlockEntities.INDUCTION_FURNACE,
 			metal().strength(5.0F, 8.0F).lightLevel(state -> state.getValue(MachineBlock.LIT) ? 12 : 0));
 	public static final Block THERMAL_GENERATOR = machine("thermal_generator", () -> ModBlockEntities.THERMAL_GENERATOR,
@@ -58,6 +76,14 @@ public final class ModBlocks {
 	public static final Block CHARGER = machine("charger", () -> ModBlockEntities.CHARGER, metal().lightLevel(state -> state.getValue(MachineBlock.LIT) ? 7 : 0));
 
 	private ModBlocks() {
+	}
+
+	private static Block computer(String name, Supplier<BlockEntityType<?>> type) {
+		return register(name, p -> new ComputerBlock(type, p), metal());
+	}
+
+	private static BlockBehaviour.Properties pipe() {
+		return BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(0.5F).sound(SoundType.COPPER).noOcclusion();
 	}
 
 	private static BlockBehaviour.Properties metal() {

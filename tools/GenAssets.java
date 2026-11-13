@@ -32,6 +32,8 @@ public class GenAssets {
 		nuclear();
 		gauges();
 		logistics();
+		refining();
+		computers();
 		System.out.println("done");
 	}
 
@@ -75,7 +77,7 @@ public class GenAssets {
 		}
 		machine("reactor_chamber", true);
 
-		shaped("fuel_rod", 1, new String[]{"LUL", "LUL", "LUL"}, "L", "voltworks:lead_ingot", "U", "voltworks:uranium_ingot");
+		shaped("fuel_rod", 1, new String[]{"LUL", "LUL", "LUL"}, "L", "voltworks:lead_ingot", "U", "voltworks:refined_uranium");
 		shaped("heat_vent", 1, new String[]{"SBS", "BCB", "SBS"}, "S", "voltworks:steel_ingot", "B", "minecraft:iron_bars",
 				"C", "minecraft:copper_ingot");
 		shaped("reactor_chamber", 1, new String[]{"LCL", "CAC", "LCL"}, "L", "voltworks:lead_block", "C", "voltworks:circuit",
@@ -386,11 +388,15 @@ public class GenAssets {
 			// Storage block: riveted plates in the metal colour
 			png("block/" + n + "_block", (x, y, r) -> casing(x, y, r, m.color(), shade(m.color(), 40)));
 			cubeAll(n + "_block");
-			// Raw ore lump, ingot, dust
+			// Raw ore lump, ingot, dust. Uranium is never smelted or crushed: the Uranium Refiner turns it into
+			// Refined Uranium (see refining()), which is what its storage block holds.
+			boolean refined = n.equals("uranium");
 			rawLump("item/raw_" + n, m.color());
-			ingot("item/" + n + "_ingot", m.color());
-			dust("item/" + n + "_dust", m.color());
-			for (String item : List.of("raw_" + n, n + "_ingot", n + "_dust")) {
+			if (!refined) {
+				ingot("item/" + n + "_ingot", m.color());
+				dust("item/" + n + "_dust", m.color());
+			}
+			for (String item : refined ? List.of("raw_" + n) : List.of("raw_" + n, n + "_ingot", n + "_dust")) {
 				write("assets/voltworks/models/item/" + item + ".json",
 						"{ \"parent\": \"minecraft:item/generated\", \"textures\": { \"layer0\": \"voltworks:item/" + item + "\" } }");
 				itemDef(item, "voltworks:item/" + item);
@@ -410,7 +416,7 @@ public class GenAssets {
 			selfLoot(n + "_block");
 
 			// Smelting: raw ore, ore blocks and dust all give an ingot
-			for (String in : List.of("raw_" + n, n + "_ore", "deepslate_" + n + "_ore", n + "_dust")) {
+			for (String in : refined ? List.<String>of() : List.of("raw_" + n, n + "_ore", "deepslate_" + n + "_ore", n + "_dust")) {
 				for (String type : List.of("smelting", "blasting")) {
 					write("data/voltworks/recipe/" + n + "_ingot_from_" + type + "_" + in + ".json", """
 						{ "type": "minecraft:%s", "cookingtime": %d, "experience": 0.7,
@@ -418,7 +424,7 @@ public class GenAssets {
 						""".formatted(type, type.equals("smelting") ? 200 : 100, in, n));
 				}
 			}
-			storageRecipes(n + "_ingot", n + "_block");
+			storageRecipes(refined ? "refined_" + n : n + "_ingot", n + "_block");
 
 			// Worldgen: configured feature (vein) + placed feature (how many, how deep)
 			write("data/voltworks/worldgen/feature/ore_" + n + ".json", """
@@ -436,9 +442,11 @@ public class GenAssets {
 				""".formatted(n, m.veinsPerChunk(), m.minY(), m.maxY()));
 
 			// Convention tags so other mods recognise the materials
-			tag("item", "c", "ingots/" + n, "voltworks:" + n + "_ingot");
+			if (!refined) {
+				tag("item", "c", "ingots/" + n, "voltworks:" + n + "_ingot");
+				tag("item", "c", "dusts/" + n, "voltworks:" + n + "_dust");
+			}
 			tag("item", "c", "raw_materials/" + n, "voltworks:raw_" + n);
-			tag("item", "c", "dusts/" + n, "voltworks:" + n + "_dust");
 			tag("block", "c", "ores/" + n, "voltworks:" + n + "_ore", "voltworks:deepslate_" + n + "_ore");
 			tag("item", "c", "ores/" + n, "voltworks:" + n + "_ore", "voltworks:deepslate_" + n + "_ore");
 			tag("block", "c", "storage_blocks/" + n, "voltworks:" + n + "_block");
@@ -671,19 +679,26 @@ public class GenAssets {
 				return casing(x, y, r);
 			});
 		}
-		// Battery Box: an empty meter window; the live charge level is a gauge model drawn over it.
-		png("block/battery_box_front", (x, y, r) -> {
-			if (inRect(x, y, 5, 3, 10, 12)) {
-				if (x == 5 || x == 10 || y == 3 || y == 12) return rgb(40, 40, 44);
-				return rgb(24, 40, 28);
-			}
-			return casing(x, y, r);
-		});
-		png("block/battery_box_top", (x, y, r) -> {
-			if (inRect(x, y, 3, 6, 5, 8) || inRect(x, y, 11, 6, 11, 8) || inRect(x, y, 10, 7, 12, 7)) return rgb(200, 40, 40);
-			if (inRect(x, y, 3, 7, 5, 7)) return rgb(40, 40, 40);
-			return casing(x, y, r);
-		});
+		// Batteries: an empty meter window (the live charge level is a gauge model drawn over it), a stripe in the
+		// battery's colour under it, and +/- terminals of that colour on top. Large and Huge use the tier 2 casing.
+		for (var b : BATTERY_COLORS.entrySet()) {
+			String name = b.getKey();
+			int color = b.getValue();
+			boolean big = TIER2.contains(name);
+			png("block/" + name + "_front", (x, y, r) -> {
+				if (inRect(x, y, 5, 3, 10, 12)) {
+					if (x == 5 || x == 10 || y == 3 || y == 12) return rgb(40, 40, 44);
+					return rgb(24, 40, 28);
+				}
+				if (y == 14 && x >= 3 && x <= 12) return shade(color, x % 2 == 0 ? 0 : -25);
+				return big ? casing2(x, y, r) : casing(x, y, r);
+			});
+			png("block/" + name + "_top", (x, y, r) -> {
+				if (inRect(x, y, 3, 6, 5, 8) || inRect(x, y, 11, 6, 11, 8) || inRect(x, y, 10, 7, 12, 7)) return color;
+				if (inRect(x, y, 3, 7, 5, 7)) return rgb(40, 40, 40);
+				return big ? casing2(x, y, r) : casing(x, y, r);
+			});
+		}
 		png("block/solar_panel_top", (x, y, r) -> {
 			if (x == 0 || y == 0 || x == 15 || y == 15) return shade(STEEL, 20);
 			if (x % 5 == 0 || y % 5 == 0) return rgb(170, 180, 195);
@@ -759,7 +774,7 @@ public class GenAssets {
 		machine("generator", true);
 		machine("crusher", true);
 		machine("electric_furnace", true);
-		machine("battery_box", false);
+		for (String battery : BATTERY_COLORS.keySet()) machine(battery, false);
 		machine("alloy_smelter", true);
 		machine("industrial_crusher", true);
 		machine("induction_furnace", true);
@@ -839,7 +854,10 @@ public class GenAssets {
 			  "block.voltworks.generator": "Generator",
 			  "block.voltworks.crusher": "Crusher",
 			  "block.voltworks.electric_furnace": "Electric Furnace",
-			  "block.voltworks.battery_box": "Battery Box",
+			  "block.voltworks.battery_box": "Medium Battery",
+			  "block.voltworks.small_battery": "Small Battery",
+			  "block.voltworks.large_battery": "Large Battery",
+			  "block.voltworks.huge_battery": "Huge Battery",
 			  "block.voltworks.solar_panel": "Solar Panel",
 			  "block.voltworks.copper_cable": "Copper Cable",
 			  "block.voltworks.machine_frame": "Machine Frame",
@@ -893,10 +911,30 @@ public class GenAssets {
 			  "tooltip.voltworks.upgrade.hint": "Place in a machine's upgrade slots (one per slot)",
 			  "block.voltworks.uranium_ore": "Uranium Ore",
 			  "block.voltworks.deepslate_uranium_ore": "Deepslate Uranium Ore",
-			  "block.voltworks.uranium_block": "Block of Uranium",
+			  "block.voltworks.uranium_block": "Block of Refined Uranium",
+			  "item.voltworks.refined_uranium": "Refined Uranium",
+			  "tooltip.voltworks.refined_uranium": "Enriched in the Uranium Refiner; Fuel Rods are made from it",
+			  "block.voltworks.uranium_refiner": "Uranium Refiner",
+			  "item.voltworks.silicon": "Silicon",
+			  "item.voltworks.silicon_chip": "Silicon Chip",
+			  "item.voltworks.small_hard_drive": "Small Hard Drive (1K)",
+			  "item.voltworks.medium_hard_drive": "Medium Hard Drive (4K)",
+			  "item.voltworks.large_hard_drive": "Large Hard Drive (16K)",
+			  "item.voltworks.huge_hard_drive": "Huge Hard Drive (64K)",
+			  "tooltip.voltworks.drive.usage": "Stored: %s / %s items",
+			  "tooltip.voltworks.drive.types": "Types: %s / %s",
+			  "block.voltworks.data_cable": "Data Cable",
+			  "block.voltworks.drive_rack": "Drive Rack",
+			  "block.voltworks.storage_terminal": "Storage Terminal",
+			  "block.voltworks.computer_crafter": "Computer Crafter",
+			  "gui.voltworks.search": "Search...",
+			  "gui.voltworks.storage.offline": "Offline: no powered Drive Rack",
+			  "gui.voltworks.storage.usage": "%s / %s items, %s types",
+			  "gui.voltworks.storage.count": "Stored: %s",
+			  "gui.voltworks.crafter.craft": "x%s",
+			  "gui.voltworks.rack.online": "Online",
+			  "gui.voltworks.rack.offline": "No power: drives offline",
 			  "item.voltworks.raw_uranium": "Raw Uranium",
-			  "item.voltworks.uranium_ingot": "Uranium Ingot",
-			  "item.voltworks.uranium_dust": "Uranium Dust",
 			  "block.voltworks.reactor_chamber": "Reactor Chamber",
 			  "item.voltworks.fuel_rod": "Fuel Rod",
 			  "item.voltworks.depleted_fuel_rod": "Depleted Fuel Rod",
@@ -918,7 +956,7 @@ public class GenAssets {
 			if (lit && !hasOnTexture) continue;
 			String suffix = lit ? "_on" : "";
 			boolean tier2 = TIER2.contains(name);
-			String top = name.equals("battery_box") ? "voltworks:block/battery_box_top"
+			String top = BATTERY_COLORS.containsKey(name) ? "voltworks:block/" + name + "_top"
 					: tier2 ? "voltworks:block/advanced_machine_top" : "voltworks:block/machine_top";
 			String side = tier2 ? "voltworks:block/advanced_machine_side" : "voltworks:block/machine_side";
 			write("assets/voltworks/models/block/" + name + suffix + ".json",
@@ -927,7 +965,7 @@ public class GenAssets {
 		}
 		// Energy gauge on the front: the Battery Box's big meter, a slim gauge on other machines.
 		// The Thermal Generator stores nothing, so it has none.
-		String gauge = name.equals("battery_box") ? "battery_gauge" : name.equals("thermal_generator") ? null : "gauge";
+		String gauge = BATTERY_COLORS.containsKey(name) ? "battery_gauge" : Set.of("thermal_generator", "storage_terminal", "computer_crafter").contains(name) ? null : "gauge";
 		if (gauge == null) {
 			facingStates(name, lit -> lit && hasOnTexture ? name + "_on" : name, true);
 		} else {
@@ -1016,9 +1054,20 @@ public class GenAssets {
 	}
 
 	// ---------------- data: loot, tags, recipes ----------------
-	static final Set<String> TIER2 = Set.of("industrial_crusher", "induction_furnace", "thermal_generator", "reactor_chamber");
+	static final Set<String> TIER2 = Set.of("industrial_crusher", "induction_furnace", "thermal_generator", "reactor_chamber",
+			"large_battery", "huge_battery", "uranium_refiner");
+	/** Batteries and their colour (top terminals, front stripe). battery_box is the Medium Battery. */
+	static final Map<String, Integer> BATTERY_COLORS = new LinkedHashMap<>(Map.of());
+	static {
+		BATTERY_COLORS.put("small_battery", rgb(60, 190, 70));
+		BATTERY_COLORS.put("battery_box", rgb(200, 40, 40));
+		BATTERY_COLORS.put("large_battery", rgb(50, 110, 220));
+		BATTERY_COLORS.put("huge_battery", rgb(160, 70, 210));
+	}
 	static final List<String> BLOCKS = List.of("generator", "crusher", "electric_furnace", "battery_box", "solar_panel", "copper_cable", "machine_frame",
-			"advanced_machine_frame", "alloy_smelter", "industrial_crusher", "induction_furnace", "thermal_generator", "charger", "reactor_chamber", "item_pipe");
+			"advanced_machine_frame", "alloy_smelter", "industrial_crusher", "induction_furnace", "thermal_generator", "charger", "reactor_chamber", "item_pipe",
+			"fast_item_pipe", "express_item_pipe", "filter_pipe", "small_battery", "large_battery", "huge_battery", "uranium_refiner",
+			"data_cable", "drive_rack", "storage_terminal", "computer_crafter");
 
 	static void data() throws Exception {
 		for (String b : BLOCKS) {
@@ -1044,6 +1093,12 @@ public class GenAssets {
 				"F", "minecraft:furnace", "M", "voltworks:machine_frame");
 		shaped("battery_box", 1, new String[]{"LRL", "RMR", "LRL"}, "L", "voltworks:lead_ingot", "R", "minecraft:redstone",
 				"M", "voltworks:machine_frame");
+		shaped("small_battery", 1, new String[]{"LRL", "RCR", "LRL"}, "L", "voltworks:lead_ingot", "R", "minecraft:redstone",
+				"C", "minecraft:copper_ingot");
+		shaped("large_battery", 1, new String[]{"BCB", "SAS", "BCB"}, "B", "voltworks:battery_box", "C", "voltworks:circuit",
+				"S", "voltworks:steel_ingot", "A", "voltworks:advanced_machine_frame");
+		shaped("huge_battery", 1, new String[]{"BCB", "LAL", "BCB"}, "B", "voltworks:large_battery", "C", "voltworks:circuit",
+				"L", "voltworks:lead_block", "A", "voltworks:advanced_machine_frame");
 		shaped("solar_panel", 1, new String[]{"GGG", "CDC", "CMC"}, "G", "minecraft:glass", "C", "minecraft:copper_ingot",
 				"D", "minecraft:daylight_detector", "M", "voltworks:machine_frame");
 
@@ -1087,61 +1142,7 @@ public class GenAssets {
 
 	// ---------------- logistics: item pipe, wrench, guide ----------------
 	static void logistics() throws Exception {
-		// Item pipe: tin-grey tube with a glass stripe; extracting arms get a hazard-striped collar.
-		png("block/item_pipe", (x, y, r) -> {
-			int base = rgb(150, 156, 166);
-			if (y == 7 || y == 8) return rgb(150 + r.nextInt(20), 205, 225);   // glass stripe
-			if (y == 6 || y == 9) return shade(base, -45);
-			if (x % 5 == 0) return shade(base, 25);                             // band joints
-			return shade(base, r.nextInt(11) - 5);
-		});
-		png("block/item_pipe_extract", (x, y, r) -> ((x + y) / 2 % 2 == 0) ? rgb(235, 190, 40) : rgb(30, 30, 34));
-		String tex = "\"textures\": { \"pipe\": \"voltworks:block/item_pipe\", \"collar\": \"voltworks:block/item_pipe_extract\", \"particle\": \"voltworks:block/item_pipe\" }";
-		write("assets/voltworks/models/block/item_pipe_core.json", """
-			{ "ambientocclusion": false, %s,
-			  "elements": [ { "from": [5,5,5], "to": [11,11,11], "faces": {
-			    "north": {"uv":[5,5,11,11],"texture":"#pipe"}, "south": {"uv":[5,5,11,11],"texture":"#pipe"},
-			    "east": {"uv":[5,5,11,11],"texture":"#pipe"}, "west": {"uv":[5,5,11,11],"texture":"#pipe"},
-			    "up": {"uv":[5,5,11,11],"texture":"#pipe"}, "down": {"uv":[5,5,11,11],"texture":"#pipe"} } } ] }
-			""".formatted(tex));
-		write("assets/voltworks/models/block/item_pipe_side.json", """
-			{ "ambientocclusion": false, %s,
-			  "elements": [ { "from": [5,5,0], "to": [11,11,5], "faces": {
-			    "north": {"uv":[5,5,11,11],"texture":"#pipe"},
-			    "east": {"uv":[0,5,5,11],"texture":"#pipe"}, "west": {"uv":[0,5,5,11],"texture":"#pipe"},
-			    "up": {"uv":[5,0,11,5],"texture":"#pipe", "rotation": 90}, "down": {"uv":[5,0,11,5],"texture":"#pipe", "rotation": 90} } } ] }
-			""".formatted(tex));
-		// Collar sits at the far end of an extracting arm, slightly wider than the pipe.
-		write("assets/voltworks/models/block/item_pipe_extract.json", """
-			{ "ambientocclusion": false, %s,
-			  "elements": [ { "from": [4,4,0], "to": [12,12,2], "faces": {
-			    "north": {"uv":[4,4,12,12],"texture":"#collar"}, "south": {"uv":[4,4,12,12],"texture":"#collar"},
-			    "east": {"uv":[0,4,2,12],"texture":"#collar"}, "west": {"uv":[0,4,2,12],"texture":"#collar"},
-			    "up": {"uv":[4,0,12,2],"texture":"#collar"}, "down": {"uv":[4,0,12,2],"texture":"#collar"} } } ] }
-			""".formatted(tex));
-		write("assets/voltworks/models/block/item_pipe_inventory.json", """
-			{ "parent": "minecraft:block/block", %s,
-			  "elements": [
-			    { "from": [0,5,5], "to": [16,11,11], "faces": {
-			      "north": {"uv":[0,5,16,11],"texture":"#pipe"}, "south": {"uv":[0,5,16,11],"texture":"#pipe"},
-			      "up": {"uv":[0,5,16,11],"texture":"#pipe"}, "down": {"uv":[0,5,16,11],"texture":"#pipe"},
-			      "east": {"uv":[5,5,11,11],"texture":"#pipe"}, "west": {"uv":[5,5,11,11],"texture":"#pipe"} } },
-			    { "from": [0,4,4], "to": [2,12,12], "faces": {
-			      "north": {"uv":[0,4,2,12],"texture":"#collar"}, "south": {"uv":[0,4,2,12],"texture":"#collar"},
-			      "up": {"uv":[0,4,2,12],"texture":"#collar"}, "down": {"uv":[0,4,2,12],"texture":"#collar"},
-			      "east": {"uv":[4,4,12,12],"texture":"#collar"}, "west": {"uv":[4,4,12,12],"texture":"#collar"} } } ] }
-			""".formatted(tex));
-		String[][] dirs = {{"north", ""}, {"east", ", \"y\": 90"}, {"south", ", \"y\": 180"}, {"west", ", \"y\": 270"},
-				{"up", ", \"x\": 270"}, {"down", ", \"x\": 90"}};
-		List<String> parts = new ArrayList<>();
-		parts.add("{ \"apply\": { \"model\": \"voltworks:block/item_pipe_core\" } }");
-		for (String[] d : dirs) {
-			parts.add("{ \"when\": { " + q(d[0]) + ": \"connected|extract\" }, \"apply\": { \"model\": \"voltworks:block/item_pipe_side\"" + d[1] + " } }");
-			parts.add("{ \"when\": { " + q(d[0]) + ": \"extract\" }, \"apply\": { \"model\": \"voltworks:block/item_pipe_extract\"" + d[1] + " } }");
-		}
-		write("assets/voltworks/blockstates/item_pipe.json", "{ \"multipart\": [\n  " + String.join(",\n  ", parts) + "\n] }");
-		itemDef("item_pipe", "voltworks:block/item_pipe_inventory");
-		shaped("item_pipe", 8, new String[]{"TGT"}, "T", "voltworks:tin_ingot", "G", "minecraft:glass");
+		pipes();
 
 		// Wrench: open-ended spanner, steel head with a slot, red grip
 		boolean[][] mask = new boolean[16][16];
@@ -1189,6 +1190,14 @@ public class GenAssets {
 		// Translations for the logistics items, merged into the language file written by models()
 		Map<String, String> lang = new LinkedHashMap<>();
 		lang.put("block.voltworks.item_pipe", "Item Pipe");
+		lang.put("block.voltworks.fast_item_pipe", "Fast Item Pipe");
+		lang.put("block.voltworks.express_item_pipe", "Express Item Pipe");
+		lang.put("block.voltworks.filter_pipe", "Filter Pipe");
+		lang.put("gui.voltworks.filter.allow", "Allow");
+		lang.put("gui.voltworks.filter.deny", "Deny");
+		lang.put("gui.voltworks.filter.allow.hint", "Only items in the filter pass. An empty filter lets everything through. Click to switch to Deny.");
+		lang.put("gui.voltworks.filter.deny.hint", "Items in the filter are blocked; everything else passes. Click to switch to Allow.");
+		lang.put("message.voltworks.pipe.extract_needs_inventory", "Only a pipe arm touching an inventory can extract");
 		lang.put("item.voltworks.wrench", "Wrench");
 		lang.put("item.voltworks.guide", "Voltworks Guide");
 		lang.put("message.voltworks.wrench.rotate", "Wrench: Rotate mode");
@@ -1198,14 +1207,15 @@ public class GenAssets {
 		lang.put("message.voltworks.wrench.not_configurable", "This block has no configurable sides");
 		lang.put("message.voltworks.wrench.side", "%s side: %s");
 		lang.put("message.voltworks.pipe.nothing", "Nothing to connect to on that side");
-		lang.put("message.voltworks.pipe.connected", "Pipe side: connected");
+		lang.put("message.voltworks.pipe.connected", "Pipe side: connected (not extracting)");
 		lang.put("message.voltworks.pipe.extract", "Pipe side: extracting");
-		lang.put("message.voltworks.pipe.disabled", "Pipe side: disabled");
+		lang.put("message.voltworks.pipe.disabled", "Pipe side: disconnected");
 		lang.put("message.voltworks.pipe.none", "Pipe side: not connected");
 		lang.put("tooltip.voltworks.wrench.rotate", "Mode: Rotate");
 		lang.put("tooltip.voltworks.wrench.configure", "Mode: Configure sides");
-		lang.put("tooltip.voltworks.wrench.hint1", "Right-click the air to switch mode; right-click a pipe arm to cycle it");
-		lang.put("tooltip.voltworks.wrench.hint2", "Sneak + right-click a Voltworks block to pick it up");
+		lang.put("tooltip.voltworks.wrench.hint1", "Right-click the air: switch Rotate / Configure mode");
+		lang.put("tooltip.voltworks.wrench.hint2", "Right-click a pipe arm: connect / disconnect");
+		lang.put("tooltip.voltworks.wrench.hint3", "Sneak + right-click: toggle Extract on a pipe arm, or pick up a Voltworks block");
 		lang.put("tooltip.voltworks.chainsaw", "Fells the whole tree (sneak to cut one log)");
 		for (String m : List.of("none", "input", "output", "both")) lang.put("side_mode.voltworks." + m, Character.toUpperCase(m.charAt(0)) + m.substring(1));
 		for (String sd : List.of("front", "back", "left", "right", "top", "bottom")) lang.put("side.voltworks." + sd, Character.toUpperCase(sd.charAt(0)) + sd.substring(1));
@@ -1237,5 +1247,241 @@ public class GenAssets {
 			}
 			return 0;
 		});
+	}
+
+	// ---------------- item pipes ----------------
+	static int argb(int a, int r, int g, int b) { return (clamp(a) << 24) | (clamp(r) << 16) | (clamp(g) << 8) | clamp(b); }
+
+	/**
+	 * All item pipes: clear glass tubes (so the items travelling inside show) with an opaque rim in the tier's colour.
+	 * Extracting arms get a hazard-striped collar. The filter pipe has a mesh on its faces.
+	 */
+	static void pipes() throws Exception {
+		png("block/item_pipe_extract", (x, y, r) -> ((x + y) / 2 % 2 == 0) ? rgb(235, 190, 40) : rgb(30, 30, 34));
+		pipe("item_pipe", rgb(176, 182, 192), false);
+		pipe("fast_item_pipe", rgb(196, 56, 44), false);
+		pipe("express_item_pipe", rgb(240, 192, 40), false);
+		pipe("filter_pipe", rgb(150, 74, 200), true);
+
+		shaped("item_pipe", 8, new String[]{"TGT"}, "T", "voltworks:tin_ingot", "G", "minecraft:glass");
+		shaped("fast_item_pipe", 8, new String[]{"PPP", "PSP", "PPP"}, "P", "voltworks:item_pipe", "S", "voltworks:steel_ingot");
+		shaped("express_item_pipe", 6, new String[]{"PPP", "GCG", "PPP"}, "P", "voltworks:fast_item_pipe", "G", "minecraft:gold_ingot",
+				"C", "voltworks:circuit");
+		write("data/voltworks/recipe/filter_pipe.json", """
+			{ "type": "minecraft:crafting_shapeless",
+			  "ingredients": [ "voltworks:item_pipe", "minecraft:comparator" ],
+			  "result": { "id": "voltworks:filter_pipe", "count": 1 } }
+			""");
+	}
+
+	static void pipe(String name, int rim, boolean mesh) throws Exception {
+		// Texture: faces use the 6x6 window at 5..10 (core, arm ends) or strips 0..4 x 5..10 (arm sides).
+		png("block/" + name, (x, y, r) -> {
+			if (x == 5 || x == 10 || y == 5 || y == 10) return shade(rim, (x + y) % 3 == 0 ? 18 : 0);   // rim
+			if (mesh && x >= 6 && x <= 9 && y >= 6 && y <= 9 && (x + y) % 2 == 0) return shade(rim, -50);
+			if (y == 6 && x != 5 && x != 10) return argb(80, 255, 255, 255);                         // glint
+			return argb(28, 210, 235, 245);                                                            // clear glass
+		});
+		String tex = "\"textures\": { \"pipe\": { \"sprite\": \"voltworks:block/" + name + "\", \"force_translucent\": true },"
+				+ " \"collar\": \"voltworks:block/item_pipe_extract\", \"particle\": \"voltworks:block/" + name + "\" }";
+		write("assets/voltworks/models/block/" + name + "_core.json", """
+			{ "ambientocclusion": false, %s,
+			  "elements": [ { "from": [5,5,5], "to": [11,11,11], "faces": {
+			    "north": {"uv":[5,5,11,11],"texture":"#pipe"}, "south": {"uv":[5,5,11,11],"texture":"#pipe"},
+			    "east": {"uv":[5,5,11,11],"texture":"#pipe"}, "west": {"uv":[5,5,11,11],"texture":"#pipe"},
+			    "up": {"uv":[5,5,11,11],"texture":"#pipe"}, "down": {"uv":[5,5,11,11],"texture":"#pipe"} } } ] }
+			""".formatted(tex));
+		write("assets/voltworks/models/block/" + name + "_side.json", """
+			{ "ambientocclusion": false, %s,
+			  "elements": [ { "from": [5,5,0], "to": [11,11,5], "faces": {
+			    "north": {"uv":[5,5,11,11],"texture":"#pipe"},
+			    "east": {"uv":[0,5,5,11],"texture":"#pipe"}, "west": {"uv":[0,5,5,11],"texture":"#pipe"},
+			    "up": {"uv":[5,0,11,5],"texture":"#pipe", "rotation": 90}, "down": {"uv":[5,0,11,5],"texture":"#pipe", "rotation": 90} } } ] }
+			""".formatted(tex));
+		write("assets/voltworks/models/block/" + name + "_extract.json", """
+			{ "ambientocclusion": false, %s,
+			  "elements": [ { "from": [4,4,0], "to": [12,12,2], "faces": {
+			    "north": {"uv":[4,4,12,12],"texture":"#collar"}, "south": {"uv":[4,4,12,12],"texture":"#collar"},
+			    "east": {"uv":[0,4,2,12],"texture":"#collar"}, "west": {"uv":[0,4,2,12],"texture":"#collar"},
+			    "up": {"uv":[4,0,12,2],"texture":"#collar"}, "down": {"uv":[4,0,12,2],"texture":"#collar"} } } ] }
+			""".formatted(tex));
+		write("assets/voltworks/models/block/" + name + "_inventory.json", """
+			{ "parent": "minecraft:block/block", %s,
+			  "elements": [
+			    { "from": [0,5,5], "to": [16,11,11], "faces": {
+			      "north": {"uv":[0,5,16,11],"texture":"#pipe"}, "south": {"uv":[0,5,16,11],"texture":"#pipe"},
+			      "up": {"uv":[0,5,16,11],"texture":"#pipe"}, "down": {"uv":[0,5,16,11],"texture":"#pipe"},
+			      "east": {"uv":[5,5,11,11],"texture":"#pipe"}, "west": {"uv":[5,5,11,11],"texture":"#pipe"} } },
+			    { "from": [0,4,4], "to": [2,12,12], "faces": {
+			      "north": {"uv":[0,4,2,12],"texture":"#collar"}, "south": {"uv":[0,4,2,12],"texture":"#collar"},
+			      "up": {"uv":[0,4,2,12],"texture":"#collar"}, "down": {"uv":[0,4,2,12],"texture":"#collar"},
+			      "east": {"uv":[4,4,12,12],"texture":"#collar"}, "west": {"uv":[4,4,12,12],"texture":"#collar"} } } ] }
+			""".formatted(tex));
+		String[][] dirs = {{"north", ""}, {"east", ", \"y\": 90"}, {"south", ", \"y\": 180"}, {"west", ", \"y\": 270"},
+				{"up", ", \"x\": 270"}, {"down", ", \"x\": 90"}};
+		List<String> parts = new ArrayList<>();
+		parts.add("{ \"apply\": { \"model\": \"voltworks:block/" + name + "_core\" } }");
+		for (String[] d : dirs) {
+			parts.add("{ \"when\": { " + q(d[0]) + ": \"connected|extract\" }, \"apply\": { \"model\": \"voltworks:block/" + name + "_side\"" + d[1] + " } }");
+			parts.add("{ \"when\": { " + q(d[0]) + ": \"extract\" }, \"apply\": { \"model\": \"voltworks:block/" + name + "_extract\"" + d[1] + " } }");
+		}
+		write("assets/voltworks/blockstates/" + name + ".json", "{ \"multipart\": [\n  " + String.join(",\n  ", parts) + "\n] }");
+		itemDef(name, "voltworks:block/" + name + "_inventory");
+	}
+
+	// ---------------- uranium refining ----------------
+	/** Refined Uranium (a glowing fuel pellet) and the Uranium Refiner: two centrifuge tanks behind glass. */
+	static void refining() throws Exception {
+		png("item/refined_uranium", (x, y, r) -> {
+			// A stubby pellet seen at an angle: rounded body, lighter top face, dark outline
+			double dx = (x - 7.5) / 4.6, dyTop = (y - 5.0) / 2.0, dyBot = (y - 11.0) / 2.0;
+			boolean body = Math.abs(dx) <= 1 && y >= 5 && y <= 11;
+			boolean top = dx * dx + dyTop * dyTop <= 1;
+			boolean bottom = dx * dx + dyBot * dyBot <= 1;
+			if (!body && !top && !bottom) {
+				// soft glow around the pellet
+				double d = Math.hypot((x - 7.5) / 6.5, (y - 8.0) / 6.5);
+				return d < 1 ? argb((int) (70 * (1 - d)), 140, 255, 90) : 0;
+			}
+			boolean edge = Math.abs(dx) > 0.82 || (bottom && dx * dx + dyBot * dyBot > 0.6 && y > 11);
+			if (top && y <= 5) return y == 3 || Math.abs(dx) > 0.8 ? rgb(60, 120, 40) : rgb(200, 255, 150);
+			if (edge) return rgb(50, 110, 35);
+			return shade(rgb(110, 225, 70), (x - y) % 3 == 0 ? 25 : r.nextInt(9) - 4);
+		});
+		write("assets/voltworks/models/item/refined_uranium.json",
+				"{ \"parent\": \"minecraft:item/generated\", \"textures\": { \"layer0\": \"voltworks:item/refined_uranium\" } }");
+		itemDef("refined_uranium", "voltworks:item/refined_uranium");
+
+		for (boolean on : new boolean[]{false, true}) {
+			png("block/uranium_refiner_front" + (on ? "_on" : ""), (x, y, r) -> {
+				for (int cx : new int[]{4, 11}) {
+					if (Math.abs(x - cx) <= 2 && y >= 2 && y <= 11) {
+						if (Math.abs(x - cx) == 2 || y == 2 || y == 11) return rgb(150, 156, 168);         // tank frame
+						int level = on ? 4 + (int) ((x + cx) % 2) : 7;                                     // churning when on
+						if (y >= level) return on ? rgb(110 + r.nextInt(50), 240, 80) : rgb(60, 110, 45);  // uranium solution
+						return rgb(30, 40, 36);
+					}
+				}
+				if (y >= 13 && y <= 14 && x >= 1 && x <= 14) return ((x + y) / 2 % 2 == 0) ? rgb(240, 200, 30) : rgb(25, 25, 25);
+				if (x == 7 || x == 8) return y >= 4 && y <= 9 ? rgb(90, 96, 108) : casing2(x, y, r);         // pipe between tanks
+				return casing2(x, y, r);
+			});
+		}
+		machine("uranium_refiner", true);
+		// Glass tanks, a water bucket for leaching, circuits and steel on an advanced frame
+		shaped("uranium_refiner", 1, new String[]{"SCS", "GAG", "SWS"}, "S", "voltworks:steel_ingot", "C", "voltworks:circuit",
+				"G", "minecraft:glass", "A", "voltworks:advanced_machine_frame", "W", "minecraft:water_bucket");
+	}
+
+	// ---------------- computer storage ----------------
+	static final Map<String, Integer> DRIVE_COLORS = new LinkedHashMap<>();
+	static {
+		DRIVE_COLORS.put("small_hard_drive", rgb(70, 190, 80));
+		DRIVE_COLORS.put("medium_hard_drive", rgb(60, 130, 230));
+		DRIVE_COLORS.put("large_hard_drive", rgb(170, 80, 220));
+		DRIVE_COLORS.put("huge_hard_drive", rgb(240, 190, 40));
+	}
+
+	/** Silicon, chips, hard drives, data cable, Drive Rack, Storage Terminal and Computer Crafter. */
+	static void computers() throws Exception {
+		// Silicon: a dark, glassy blue-grey crystal lump
+		png("item/silicon", (x, y, r) -> {
+			double d = Math.hypot((x - 7.5) / 5.5, (y - 8.5) / 4.8);
+			if (d > 1) return 0;
+			if (d > 0.82) return rgb(40, 46, 60);
+			boolean facet = (x + 2 * y) % 7 < 2;
+			return facet ? rgb(150, 165, 195) : shade(rgb(85, 96, 122), r.nextInt(15) - 7);
+		});
+		// Silicon chip: black package with silver pins and a bright die mark
+		png("item/silicon_chip", (x, y, r) -> {
+			if (inRect(x, y, 4, 4, 11, 11)) {
+				if (inRect(x, y, 6, 6, 7, 7)) return rgb(120, 200, 255);
+				return x == 4 || y == 4 ? rgb(70, 70, 78) : rgb(32, 32, 38);
+			}
+			boolean pinRow = (x == 2 || x == 3 || x == 12 || x == 13) && y >= 5 && y <= 10 && y % 2 == 1;
+			boolean pinCol = (y == 2 || y == 3 || y == 12 || y == 13) && x >= 5 && x <= 10 && x % 2 == 1;
+			return pinRow || pinCol ? rgb(200, 205, 215) : 0;
+		});
+		// Hard drives: a steel casing with a coloured label and an activity LED
+		for (var d : DRIVE_COLORS.entrySet()) {
+			int color = d.getValue();
+			png("item/" + d.getKey(), (x, y, r) -> {
+				if (!inRect(x, y, 2, 3, 13, 13)) return 0;
+				if (x == 2 || x == 13 || y == 3 || y == 13) return rgb(40, 42, 48);
+				if (inRect(x, y, 4, 5, 11, 8)) return y == 5 ? shade(color, 40) : color;    // label
+				if (x == 11 && y == 11) return rgb(120, 255, 120);                           // LED
+				if (inRect(x, y, 4, 10, 8, 11)) return rgb(70, 74, 82);                      // connector
+				return shade(rgb(150, 156, 166), (x + y) % 4 == 0 ? 12 : 0);
+			});
+		}
+		for (String item : List.of("silicon", "silicon_chip", "small_hard_drive", "medium_hard_drive", "large_hard_drive", "huge_hard_drive")) {
+			write("assets/voltworks/models/item/" + item + ".json",
+					"{ \"parent\": \"minecraft:item/generated\", \"textures\": { \"layer0\": \"voltworks:item/" + item + "\" } }");
+			itemDef(item, "voltworks:item/" + item);
+		}
+
+		// Data cable: same shape as the copper cable (its models are copied with the texture swapped)
+		png("block/data_cable", (x, y, r) -> {
+			if (y == 7 || y == 8) return (x % 4 < 2) ? rgb(90, 220, 255) : rgb(40, 140, 200);   // light stripe
+			return shade(rgb(30, 44, 80), y % 4 == 0 ? 15 : r.nextInt(7) - 3);
+		});
+		for (String part : List.of("models/block/copper_cable_core", "models/block/copper_cable_side", "models/block/copper_cable_inventory", "blockstates/copper_cable")) {
+			String json = Files.readString(res.resolve("assets/voltworks/" + part + ".json"));
+			write("assets/voltworks/" + part.replace("copper_cable", "data_cable") + ".json", json.replace("copper_cable", "data_cable"));
+		}
+		itemDef("data_cable", "voltworks:block/data_cable_inventory");
+
+		// Drive Rack: eight drive bays, LEDs green while powered
+		for (boolean on : new boolean[]{false, true}) {
+			png("block/drive_rack_front" + (on ? "_on" : ""), (x, y, r) -> {
+				int col = (x - 2) / 3, row = (y - 2) / 6;
+				if (x >= 2 && x <= 13 && y >= 2 && y <= 13 && col < 4 && row < 2) {
+					int bx = (x - 2) % 3, by = (y - 2) % 6;
+					if (bx == 2 || by == 5) return rgb(30, 32, 38);                                  // gaps
+					if (by == 0 && bx == 0) return on ? rgb(90, 255, 110) : rgb(40, 70, 45);        // LED
+					return by % 2 == 0 ? rgb(120, 126, 138) : rgb(96, 102, 114);                      // drive face
+				}
+				return casing(x, y, r);
+			});
+		}
+		machine("drive_rack", true);
+
+		// Storage Terminal: a screen showing a list; Computer Crafter: a screen showing a 3x3 grid
+		png("block/storage_terminal_front", (x, y, r) -> {
+			if (!inRect(x, y, 2, 2, 13, 11)) return y >= 13 && y <= 13 && x >= 4 && x <= 11 ? rgb(60, 64, 72) : casing(x, y, r);
+			if (x == 2 || x == 13 || y == 2 || y == 11) return rgb(30, 32, 38);
+			if (y % 2 == 0 && x >= 4 && x <= 4 + (x * 7 + y * 3) % 8) return rgb(110, 230, 255);
+			return rgb(16, 40, 56);
+		});
+		png("block/computer_crafter_front", (x, y, r) -> {
+			if (!inRect(x, y, 2, 2, 13, 13)) return casing(x, y, r);
+			if (x == 2 || x == 13 || y == 2 || y == 13) return rgb(30, 32, 38);
+			int gx = (x - 3) % 3, gy = (y - 3) % 3;
+			if (x >= 3 && x <= 11 && y >= 3 && y <= 11) return gx == 2 || gy == 2 ? rgb(16, 40, 56) : rgb(120, 200, 140);
+			return rgb(16, 40, 56);
+		});
+		machine("storage_terminal", false);
+		machine("computer_crafter", false);
+
+		// Recipes
+		shaped("silicon_chip", 3, new String[]{"SSS", "RCR"}, "S", "voltworks:silicon", "R", "minecraft:redstone", "C", "minecraft:copper_ingot");
+		shaped("data_cable", 8, new String[]{"CCC", "CSC", "CCC"}, "C", "voltworks:copper_cable", "S", "voltworks:silicon_chip");
+		shaped("drive_rack", 1, new String[]{"ICI", "CMC", "ICI"}, "I", "minecraft:iron_ingot", "C", "voltworks:silicon_chip",
+				"M", "voltworks:machine_frame");
+		shaped("storage_terminal", 1, new String[]{"GGG", "CMC", "IRI"}, "G", "minecraft:glass", "C", "voltworks:silicon_chip",
+				"M", "voltworks:machine_frame", "I", "minecraft:iron_ingot", "R", "minecraft:redstone");
+		write("data/voltworks/recipe/computer_crafter.json", """
+			{ "type": "minecraft:crafting_shapeless",
+			  "ingredients": [ "voltworks:storage_terminal", "minecraft:crafting_table", "voltworks:silicon_chip", "voltworks:silicon_chip" ],
+			  "result": { "id": "voltworks:computer_crafter", "count": 1 } }
+			""");
+		shaped("small_hard_drive", 1, new String[]{"ICI", "ICI", "IRI"}, "I", "minecraft:iron_ingot", "C", "voltworks:silicon_chip",
+				"R", "minecraft:redstone");
+		shaped("medium_hard_drive", 1, new String[]{"ICI", "CGC", "ICI"}, "I", "minecraft:iron_ingot", "C", "voltworks:silicon_chip",
+				"G", "minecraft:gold_ingot");
+		shaped("large_hard_drive", 1, new String[]{"SCS", "CDC", "SCS"}, "S", "voltworks:steel_ingot", "C", "voltworks:silicon_chip",
+				"D", "minecraft:diamond");
+		shaped("huge_hard_drive", 1, new String[]{"SCS", "CNC", "SCS"}, "S", "voltworks:steel_ingot", "C", "voltworks:silicon_chip",
+				"N", "minecraft:netherite_scrap");
 	}
 }

@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["SCS", "CDC", "SCS"],
+  "key": { "S": "voltworks:steel_ingot", "C": "voltworks:silicon_chip", "D": "minecraft:diamond" },
+  "result": { "id": "voltworks:large_hard_drive", "count": 1 } }

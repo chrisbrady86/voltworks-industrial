@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["CCC", "CSC", "CCC"],
+  "key": { "C": "voltworks:copper_cable", "S": "voltworks:silicon_chip" },
+  "result": { "id": "voltworks:data_cable", "count": 8 } }

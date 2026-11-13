@@ -1,0 +1,4 @@
+{ "type": "minecraft:block", "pools": [ { "rolls": 1,
+  "condition": { "type": "minecraft:survives_explosion" },
+  "entries": [ { "type": "minecraft:item", "name": "voltworks:small_battery" } ] } ],
+  "random_sequence": "voltworks:blocks/small_battery" }

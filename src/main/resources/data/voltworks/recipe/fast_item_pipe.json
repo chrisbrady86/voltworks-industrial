@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["PPP", "PSP", "PPP"],
+  "key": { "P": "voltworks:item_pipe", "S": "voltworks:steel_ingot" },
+  "result": { "id": "voltworks:fast_item_pipe", "count": 8 } }

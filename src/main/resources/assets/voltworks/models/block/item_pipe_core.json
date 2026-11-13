@@ -1,4 +1,4 @@
-{ "ambientocclusion": false, "textures": { "pipe": "voltworks:block/item_pipe", "collar": "voltworks:block/item_pipe_extract", "particle": "voltworks:block/item_pipe" },
+{ "ambientocclusion": false, "textures": { "pipe": { "sprite": "voltworks:block/item_pipe", "force_translucent": true }, "collar": "voltworks:block/item_pipe_extract", "particle": "voltworks:block/item_pipe" },
   "elements": [ { "from": [5,5,5], "to": [11,11,11], "faces": {
     "north": {"uv":[5,5,11,11],"texture":"#pipe"}, "south": {"uv":[5,5,11,11],"texture":"#pipe"},
     "east": {"uv":[5,5,11,11],"texture":"#pipe"}, "west": {"uv":[5,5,11,11],"texture":"#pipe"},

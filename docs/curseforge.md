@@ -34,10 +34,12 @@ Everything needed to create the Voltworks project and upload the first file. Cop
 
 ```
 First public release.
-- Power: Generator, Solar Panel, Thermal Generator, Reactor Chamber; Copper Cable; Battery Box
-- Machines: Crusher, Electric Furnace, Alloy Smelter, Industrial Crusher, Induction Furnace
+- Power: Generator, Solar Panel, Thermal Generator, Reactor Chamber; Copper Cable; Small, Medium, Large and Huge Batteries
+- Machines: Crusher, Electric Furnace, Alloy Smelter, Industrial Crusher, Induction Furnace, Uranium Refiner
 - Machine upgrades: Speed, Capacity, Ejector
 - Power tools: Electric Drill, Chainsaw (tree felling), Advanced Drill (3x3 mode), Charger
+- Logistics: glass Item Pipes in three speeds (watch the items travel), Filter Pipe, Wrench
+- Computer storage: Hard Drives (1K-64K), Drive Rack, Data Cable, searchable Storage Terminal, Computer Crafter
 - New ores: Tin, Lead, Uranium
 ```
 
@@ -55,7 +57,7 @@ Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through 
 - **Solar Panel** — free power in daylight.
 - **Thermal Generator** — sits next to lava source blocks: 5 J/t per source, up to 25 J/t.
 - **Reactor Chamber** — the big one. See below.
-- **Copper Cable** connects everything; **Battery Box** stores 100,000 J. Machines get power first, batteries get the surplus.
+- **Copper Cable** connects everything; **Batteries** come in four sizes, from 25,000 J to 10,000,000 J. Machines get power first, batteries get the surplus.
 
 ## 🏭 Machines
 | Machine | What it does |

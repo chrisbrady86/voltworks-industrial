@@ -3,7 +3,6 @@ package dev.voltworks.block;
 import dev.voltworks.block.entity.ItemPipeBlockEntity;
 import dev.voltworks.block.entity.PoweredContainerBlockEntity;
 import dev.voltworks.block.entity.SideConfig;
-import dev.voltworks.registry.ModBlockEntities;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Locale;
@@ -50,6 +49,21 @@ public class ItemPipeBlock extends BaseEntityBlock {
 		}
 	}
 
+	/**
+	 * Speed tier. {@code batch}: items an extracting side pulls every {@link ItemPipeBlockEntity#INTERVAL} ticks.
+	 * {@code ticksPerBlock}: how long an item takes to cross one pipe of this tier.
+	 */
+	public enum Tier {
+		BASIC(2, 6), FAST(8, 3), EXPRESS(32, 1);
+
+		public final int batch, ticksPerBlock;
+
+		Tier(int batch, int ticksPerBlock) {
+			this.batch = batch;
+			this.ticksPerBlock = ticksPerBlock;
+		}
+	}
+
 	public static final Map<Direction, EnumProperty<Side>> SIDES = new EnumMap<>(Direction.class);
 
 	static {
@@ -62,8 +76,15 @@ public class ItemPipeBlock extends BaseEntityBlock {
 	private static final Map<Direction, VoxelShape> ARMS = Shapes.rotateAll(Block.boxZ(6, 0, 5));
 	private final Map<BlockState, VoxelShape> shapes = new HashMap<>();
 
+	public final Tier tier;
+
 	public ItemPipeBlock(Properties properties) {
+		this(properties, Tier.BASIC);
+	}
+
+	public ItemPipeBlock(Properties properties, Tier tier) {
 		super(properties);
+		this.tier = tier;
 		BlockState state = this.stateDefinition.any();
 		for (EnumProperty<Side> p : SIDES.values()) state = state.setValue(p, Side.NONE);
 		this.registerDefaultState(state);
@@ -143,11 +164,11 @@ public class ItemPipeBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-		if (level.isClientSide() || type != ModBlockEntities.ITEM_PIPE) return null;
-		BlockEntityTicker<ItemPipeBlockEntity> ticker = (lvl, pos, st, be) -> be.serverTick((ServerLevel) lvl, pos, st);
-		return (BlockEntityTicker<T>) ticker;
+		if (level.isClientSide()) return null;
+		return (lvl, pos, st, be) -> {
+			if (be instanceof ItemPipeBlockEntity pipe) pipe.serverTick((ServerLevel) lvl, pos, st);
+		};
 	}
 
 	@Override

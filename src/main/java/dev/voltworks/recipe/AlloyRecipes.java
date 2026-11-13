@@ -51,6 +51,9 @@ public final class AlloyRecipes {
 		RECIPES.add(new Recipe(of(Items.IRON_INGOT, 1), coal(2), ModItems.STEEL_INGOT, 1));
 		RECIPES.add(new Recipe(of(ModItems.IRON_DUST, 1), coal(2), ModItems.STEEL_INGOT, 1));
 		RECIPES.add(new Recipe(of(Items.GOLD_INGOT, 4), of(Items.NETHERITE_SCRAP, 4), Items.NETHERITE_INGOT, 1));
+		// Silicon for computer chips: reduce sand (or nether quartz) with coal
+		RECIPES.add(new Recipe(of(Items.SAND, 2), coal(1), ModItems.SILICON, 1));
+		RECIPES.add(new Recipe(of(Items.QUARTZ, 1), coal(1), ModItems.SILICON, 2));
 	}
 
 	public static Optional<Match> find(ItemStack slot0, ItemStack slot1) {

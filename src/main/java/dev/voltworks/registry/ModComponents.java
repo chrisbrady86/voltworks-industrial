@@ -2,6 +2,7 @@ package dev.voltworks.registry;
 
 import com.mojang.serialization.Codec;
 import dev.voltworks.Voltworks;
+import dev.voltworks.storage.DriveContents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -22,6 +23,10 @@ public final class ModComponents {
 	/** Remaining burn time of a reactor fuel rod, in ticks. */
 	public static final DataComponentType<Integer> FUEL = Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, Voltworks.id("fuel"),
 			DataComponentType.<Integer>builder().persistent(ExtraCodecs.NON_NEGATIVE_INT).networkSynchronized(ByteBufCodecs.VAR_INT).build());
+
+	/** What a hard drive holds. */
+	public static final DataComponentType<DriveContents> DRIVE_CONTENTS = Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, Voltworks.id("drive_contents"),
+			DataComponentType.<DriveContents>builder().persistent(DriveContents.CODEC).networkSynchronized(DriveContents.STREAM_CODEC).build());
 
 	private ModComponents() {
 	}

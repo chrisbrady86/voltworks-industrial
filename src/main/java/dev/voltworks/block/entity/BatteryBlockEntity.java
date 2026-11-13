@@ -3,19 +3,38 @@ package dev.voltworks.block.entity;
 import dev.voltworks.energy.EnergyNetwork;
 import dev.voltworks.energy.EnergyReceiver;
 import dev.voltworks.registry.ModBlockEntities;
+import dev.voltworks.registry.ModBlocks;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
-/** Stores up to 100,000 J. Charges from generators, discharges into machines. */
+/** A battery: charges from generators, discharges into machines. Capacity and throughput depend on its {@link Tier}. */
 public class BatteryBlockEntity extends BlockEntity implements EnergyReceiver, VoltTicking, StatusReporter, EnergyGauge {
-	public static final int CAPACITY = 100_000;
-	public static final int MAX_IO = 512;
+	/** Battery sizes. The Medium Battery is the original Battery Box (its block id is still "battery_box"). */
+	public enum Tier {
+		SMALL(25_000, 128), MEDIUM(100_000, 512), LARGE(1_000_000, 2_048), HUGE(10_000_000, 8_192);
+
+		public final int capacity, maxIo;
+
+		Tier(int capacity, int maxIo) {
+			this.capacity = capacity;
+			this.maxIo = maxIo;
+		}
+
+		public static Tier of(Block block) {
+			if (block == ModBlocks.SMALL_BATTERY) return SMALL;
+			if (block == ModBlocks.LARGE_BATTERY) return LARGE;
+			if (block == ModBlocks.HUGE_BATTERY) return HUGE;
+			return MEDIUM;
+		}
+	}
+
 	private int energy;
 	private List<EnergyReceiver> receivers = List.of();
 	private int refresh;
@@ -24,14 +43,19 @@ public class BatteryBlockEntity extends BlockEntity implements EnergyReceiver, V
 		super(ModBlockEntities.BATTERY, pos, state);
 	}
 
+	public Tier tier() {
+		return Tier.of(getBlockState().getBlock());
+	}
+
 	@Override
 	public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
+		if (energy > tier().capacity) energy = tier().capacity;
 		if (--refresh <= 0) {
 			receivers = EnergyNetwork.findReceivers(level, pos, this);
 			refresh = 20;
 		}
 		if (energy > 0) {
-			int sent = EnergyNetwork.distribute(receivers, Math.min(MAX_IO, energy), false);
+			int sent = EnergyNetwork.distribute(receivers, Math.min(tier().maxIo, energy), false);
 			if (sent > 0) {
 				energy -= sent;
 				setChanged();
@@ -41,7 +65,7 @@ public class BatteryBlockEntity extends BlockEntity implements EnergyReceiver, V
 
 	@Override
 	public int receiveEnergy(int maxAmount, boolean simulate) {
-		int accepted = Math.min(Math.min(maxAmount, MAX_IO), CAPACITY - energy);
+		int accepted = Math.max(0, Math.min(Math.min(maxAmount, tier().maxIo), tier().capacity - energy));
 		if (!simulate && accepted > 0) {
 			energy += accepted;
 			setChanged();
@@ -56,7 +80,7 @@ public class BatteryBlockEntity extends BlockEntity implements EnergyReceiver, V
 
 	@Override
 	public int getMaxEnergy() {
-		return CAPACITY;
+		return tier().capacity;
 	}
 
 	public int getEnergy() {
@@ -70,13 +94,13 @@ public class BatteryBlockEntity extends BlockEntity implements EnergyReceiver, V
 
 	@Override
 	public Component getStatus() {
-		return Component.translatable("message.voltworks.battery", energy, CAPACITY);
+		return Component.translatable("message.voltworks.battery", energy, tier().capacity);
 	}
 
 	@Override
 	protected void loadAdditional(ValueInput input) {
 		super.loadAdditional(input);
-		energy = Math.min(CAPACITY, input.getIntOr("energy", 0));
+		energy = Math.max(0, input.getIntOr("energy", 0)); // clamped to the tier's capacity on the next tick
 	}
 
 	@Override

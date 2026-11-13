@@ -4,6 +4,17 @@ import dev.voltworks.Voltworks;
 import dev.voltworks.block.ItemPipeBlock;
 import dev.voltworks.block.MachineBlock;
 import dev.voltworks.block.entity.BatteryBlockEntity;
+import dev.voltworks.block.entity.ComputerCrafterBlockEntity;
+import dev.voltworks.block.entity.UraniumRefinerBlockEntity;
+import dev.voltworks.item.HardDriveItem;
+import dev.voltworks.menu.NetworkMenu;
+import dev.voltworks.recipe.AlloyRecipes;
+import dev.voltworks.recipe.CrusherRecipes;
+import dev.voltworks.storage.DriveContents;
+import dev.voltworks.storage.StorageNetwork;
+import net.minecraft.core.registries.BuiltInRegistries;
+import dev.voltworks.block.entity.FilterPipeBlockEntity;
+import dev.voltworks.block.entity.ItemPipeBlockEntity;
 import dev.voltworks.block.entity.PoweredContainerBlockEntity;
 import dev.voltworks.block.entity.ReactorBlockEntity;
 import dev.voltworks.block.entity.SideConfig;
@@ -22,6 +33,7 @@ import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -67,6 +79,15 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 					logisticsOrigin(origin(server)).getX() + 2, origin(server).getY() + 3, origin(server).getZ() - 3)));
 			context.waitTicks(10);
 			context.takeScreenshot("voltworks-pipes");
+			// Filter row and the two tier rows, then a close-up of items moving through the basic glass pipes
+			world.getServer().runOnServer(server -> command(server, String.format("tp @a %d %d %d 0 45",
+					logisticsOrigin(origin(server)).getX() + 2, origin(server).getY() + 4, origin(server).getZ() + 11)));
+			context.waitTicks(10);
+			context.takeScreenshot("voltworks-pipes-tiers");
+			world.getServer().runOnServer(server -> command(server, String.format("tp @a %.1f %d %.1f 0 35",
+					logisticsOrigin(origin(server)).getX() + 2.5, origin(server).getY() + 1, origin(server).getZ() + 17.5)));
+			context.waitTicks(10);
+			context.takeScreenshot("voltworks-pipes-flow");
 			// The meltdown crater, from above and to the north
 			world.getServer().runOnServer(server -> {
 				BlockPos hot = meltdownPos(origin(server));
@@ -91,6 +112,45 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(30);
 			context.takeScreenshot("voltworks-reactor-gui");
+			// The filter pipe's GUI (raw iron in the first slot, Allow mode)
+			world.getServer().runOnServer(server -> {
+				BlockPos filterPos = logisticsOrigin(origin(server)).offset(3, 0, 15);
+				command(server, String.format("tp @a %d %d %d 0 40", filterPos.getX(), filterPos.getY() + 1, filterPos.getZ() - 2));
+				server.getPlayerList().getPlayers().get(0).openMenu((MenuProvider) server.overworld().getBlockEntity(filterPos));
+			});
+			context.waitTicks(30);
+			context.takeScreenshot("voltworks-filter-gui");
+			// Computer storage GUIs: swap some of the test dirt for a mix of items, then open terminal, crafter and rack
+			world.getServer().runOnServer(server -> {
+				ServerLevel level = server.overworld();
+				BlockPos c = computersOrigin(origin(server));
+				StorageNetwork net = StorageNetwork.find(level, c.offset(3, 0, 6));
+				for (int i = 0; i < 20; i++) net.extract(new ItemStack(Items.DIRT), 64, false);
+				for (Item item : List.of(Items.IRON_INGOT, Items.GOLD_INGOT, Items.REDSTONE, Items.OAK_LOG, Items.COBBLESTONE, Items.DIAMOND,
+						Items.COAL, Items.COPPER_INGOT, Items.EMERALD, Items.LAPIS_LAZULI, Items.QUARTZ, Items.STRING, Items.BONE,
+						ModItems.TIN_INGOT, ModItems.LEAD_INGOT, ModItems.STEEL_INGOT, ModItems.SILICON, ModItems.SILICON_CHIP, ModItems.REFINED_URANIUM)) {
+					net.insert(new ItemStack(item, 1 + Math.abs(item.hashCode()) % 64));
+				}
+				command(server, String.format("tp @a %d %d %d 0 30", c.getX() + 3, c.getY() + 1, c.getZ() + 4));
+				server.getPlayerList().getPlayers().get(0).openMenu((MenuProvider) level.getBlockEntity(c.offset(3, 0, 6)));
+			});
+			context.waitTicks(30);
+			context.takeScreenshot("voltworks-storage-terminal");
+			world.getServer().runOnServer(server -> server.getPlayerList().getPlayers().get(0)
+					.openMenu((MenuProvider) server.overworld().getBlockEntity(computersOrigin(origin(server)).offset(4, 0, 6))));
+			context.waitTicks(30);
+			context.takeScreenshot("voltworks-computer-crafter");
+			world.getServer().runOnServer(server -> server.getPlayerList().getPlayers().get(0)
+					.openMenu((MenuProvider) server.overworld().getBlockEntity(computersOrigin(origin(server)).offset(1, 0, 6))));
+			context.waitTicks(30);
+			context.takeScreenshot("voltworks-drive-rack");
+			world.getServer().runOnServer(server -> {
+				server.getPlayerList().getPlayers().get(0).closeContainer();
+				BlockPos c = computersOrigin(origin(server));
+				command(server, String.format("tp @a %d %d %d 0 35", c.getX() + 2, c.getY() + 3, c.getZ() - 3));
+			});
+			context.waitTicks(20);
+			context.takeScreenshot("voltworks-computers-world");
 			if (!failures.isEmpty()) {
 				throw new AssertionError("Voltworks checks failed:\n - " + String.join("\n - ", failures));
 			}
@@ -222,6 +282,7 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		for (int i : new int[]{2, 5, 6, 7, 8}) put(level, idle, i, ModItems.HEAT_VENT, 1);
 
 		buildLogistics(level, o);
+		buildComputers(level, o);
 
 		// Camera: stand north of the rows, look south at them
 		command(server, "gamemode spectator @a");
@@ -266,13 +327,17 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (cap != 1_000 + 2 * 4_000) fails.add("2 Capacity Upgrades should give 9000 J (got " + cap + ")");
 		checkReactors(fails, level, o);
 		checkLogistics(fails, level, server, o);
+		checkComputers(fails, level, server, o);
 
 		// Data-driven recipes must have parsed
 		for (String id : List.of("machine_frame", "copper_cable", "generator", "crusher", "electric_furnace", "battery_box", "solar_panel",
 				"alloy_smelter", "circuit", "advanced_machine_frame", "industrial_crusher", "induction_furnace", "thermal_generator",
 				"iron_ingot_from_smelting_dust", "gold_ingot_from_blasting_dust",
 				"tin_ingot_from_smelting_raw_tin", "lead_ingot_from_blasting_lead_dust", "tin_block", "lead_ingot_from_lead_block",
-				"steel_block", "item_pipe", "wrench", "guide")) {
+				"steel_block", "item_pipe", "wrench", "guide", "fast_item_pipe", "express_item_pipe", "filter_pipe",
+				"small_battery", "large_battery", "huge_battery", "uranium_refiner", "uranium_block", "fuel_rod", "silicon_chip", "data_cable",
+				"drive_rack", "storage_terminal", "computer_crafter", "small_hard_drive", "medium_hard_drive", "large_hard_drive",
+				"huge_hard_drive")) {
 			if (server.getRecipeManager().byKey(ResourceKey.create(Registries.RECIPE, Voltworks.id(id))).isEmpty()) {
 				fails.add("Recipe failed to load: voltworks:" + id);
 			}
@@ -411,6 +476,12 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 	 *   z=3:  GEN cable CRUSHER(east side = Output) pipe CHEST               -> pipe defaults to extract, dust flows
 	 *   z=6:  CHEST(8 cobble) pipe[extract] pipe |cut| pipe CHEST             -> wrench-disabled join blocks the flow
 	 *   z=9:  GEN (rotated by wrench)   MACHINE FRAME (picked up by wrench)
+	 *   z=12: GEN cable CRUSHER(default sides) pipe pipe CHEST, E.FURNACE(z=13) touching the 2nd pipe
+	 *   z=15: CHEST(8 raw iron, 8 cobble) pipe[extract] pipe FILTER(raw iron) CHEST A; the junction pipe also runs
+	 *         south (z=16) to CHEST B (z=17)                                  -> A only ever gets raw iron
+	 *   z=19: CHEST(256 cobble) basic pipe[extract] pipe pipe CHEST           -> 4 items/s: still moving, items in flight
+	 *   z=21: CHEST(256 cobble) express pipe[extract] pipe pipe CHEST         -> 64 items/s: all 256 arrive
+	 *         -> no wrench at all: the crusher's dust reaches the chest, never the furnace
 	 */
 	/** Half-width of the meltdown reactor's stone platform. */
 	private static final int MELT_PLATFORM = 8;
@@ -425,19 +496,29 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 	}
 
 	private static void placePipe(ServerLevel level, BlockPos pos) {
-		level.setBlockAndUpdate(pos, Block.updateFromNeighbourShapes(ModBlocks.ITEM_PIPE.defaultBlockState(), level, pos));
+		placePipe(level, pos, ModBlocks.ITEM_PIPE);
+	}
+
+	private static void placePipe(ServerLevel level, BlockPos pos, Block pipe) {
+		level.setBlockAndUpdate(pos, Block.updateFromNeighbourShapes(pipe.defaultBlockState(), level, pos));
+	}
+
+	private static int count(Container c, Item item) {
+		int n = 0;
+		for (int i = 0; i < c.getContainerSize(); i++) if (c.getItem(i).is(item)) n += c.getItem(i).getCount();
+		return n;
 	}
 
 	private static void buildLogistics(ServerLevel level, BlockPos o) {
 		BlockPos l = logisticsOrigin(o);
-		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 10; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 22; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
 
 		// Row 1: chest -> chest across three pipes, first arm switched to extract with the wrench
 		level.setBlockAndUpdate(l, Blocks.CHEST.defaultBlockState());
 		level.setBlockAndUpdate(l.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
 		for (int x = 1; x <= 3; x++) placePipe(level, l.offset(x, 0, 0));
 		put(level, l, 0, Items.RAW_IRON, 16);
-		WrenchItem.cyclePipe(level, l.offset(1, 0, 0), Direction.WEST); // connected -> extract
+		WrenchItem.toggleExtract(level, l.offset(1, 0, 0), Direction.WEST); // sneak-click: extract
 
 		// Row 2: a powered crusher whose east side is configured as Output; the pipe placed there starts extracting
 		BlockPos crusher = l.offset(2, 0, 3);
@@ -458,12 +539,49 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		level.setBlockAndUpdate(c.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
 		for (int x = 1; x <= 3; x++) placePipe(level, c.offset(x, 0, 0));
 		put(level, c, 0, Items.COBBLESTONE, 8);
-		WrenchItem.cyclePipe(level, c.offset(1, 0, 0), Direction.WEST); // extract
-		WrenchItem.cyclePipe(level, c.offset(2, 0, 0), Direction.EAST); // pipe-to-pipe: connected -> disabled
+		WrenchItem.toggleExtract(level, c.offset(1, 0, 0), Direction.WEST); // sneak-click: extract
+		WrenchItem.togglePipe(level, c.offset(2, 0, 0), Direction.EAST); // click: disconnect the two pipes
 
 		// Row 4: wrench rotation and pick-up targets
 		place(level, l.offset(0, 0, 9), ModBlocks.GENERATOR);
 		place(level, l.offset(2, 0, 9), ModBlocks.MACHINE_FRAME);
+
+		// Row 5: machine -> chest with no wrench at all (default sides, plain pipes), plus a furnace on the line
+		BlockPos plainCrusher = l.offset(2, 0, 12);
+		place(level, l.offset(0, 0, 12), ModBlocks.GENERATOR);
+		place(level, l.offset(1, 0, 12), ModBlocks.COPPER_CABLE);
+		place(level, plainCrusher, ModBlocks.CRUSHER);
+		put(level, l.offset(0, 0, 12), 0, Items.COAL, 4);
+		put(level, plainCrusher, 0, Items.RAW_IRON, 2);
+		level.setBlockAndUpdate(l.offset(5, 0, 12), Blocks.CHEST.defaultBlockState());
+		place(level, l.offset(4, 0, 13), ModBlocks.ELECTRIC_FURNACE);
+		placePipe(level, l.offset(3, 0, 12));
+		placePipe(level, l.offset(4, 0, 12));
+
+		// Row 6: filter pipe sorting raw iron into chest A; everything else can only reach chest B
+		BlockPos s = l.offset(0, 0, 15);
+		level.setBlockAndUpdate(s, Blocks.CHEST.defaultBlockState());
+		level.setBlockAndUpdate(l.offset(4, 0, 15), Blocks.CHEST.defaultBlockState());
+		level.setBlockAndUpdate(l.offset(2, 0, 17), Blocks.CHEST.defaultBlockState());
+		placePipe(level, l.offset(1, 0, 15));
+		placePipe(level, l.offset(2, 0, 15));
+		placePipe(level, l.offset(3, 0, 15), ModBlocks.FILTER_PIPE);
+		placePipe(level, l.offset(2, 0, 16));
+		((FilterPipeBlockEntity) level.getBlockEntity(l.offset(3, 0, 15))).setFilter(0, new ItemStack(Items.RAW_IRON));
+		put(level, s, 0, Items.RAW_IRON, 8);
+		put(level, s, 1, Items.COBBLESTONE, 8);
+		WrenchItem.toggleExtract(level, l.offset(1, 0, 15), Direction.WEST);
+
+		// Rows 7-8: the same 3-pipe line in basic and express pipes, 256 cobblestone each
+		for (int[] row : new int[][]{{19, 0}, {21, 1}}) {
+			Block pipe = row[1] == 0 ? ModBlocks.ITEM_PIPE : ModBlocks.EXPRESS_ITEM_PIPE;
+			BlockPos src = l.offset(0, 0, row[0]);
+			level.setBlockAndUpdate(src, Blocks.CHEST.defaultBlockState());
+			level.setBlockAndUpdate(src.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
+			for (int x = 1; x <= 3; x++) placePipe(level, src.offset(x, 0, 0), pipe);
+			for (int slot = 0; slot < 4; slot++) put(level, src, slot, Items.COBBLESTONE, 64);
+			WrenchItem.toggleExtract(level, src.offset(1, 0, 0), Direction.WEST);
+		}
 	}
 
 	private static void checkLogistics(List<String> fails, ServerLevel level, MinecraftServer server, BlockPos o) {
@@ -505,6 +623,186 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (!picked || !level.getBlockState(frame).isAir()) fails.add("Wrench should pick up the Machine Frame");
 		if (!player.getInventory().contains(new ItemStack(ModBlocks.MACHINE_FRAME.asItem()))) fails.add("Picked-up Machine Frame should be in the player's inventory");
 		if (WrenchItem.dismantle(level, l.offset(0, -1, 0), player)) fails.add("Wrench must not pick up vanilla blocks");
+
+		// Row 5: no wrench used. The pipe arm on the crusher stays CONNECTED and still pulls its output.
+		ItemPipeBlock.Side plainSide = ItemPipeBlock.get(level.getBlockState(l.offset(3, 0, 12)), Direction.WEST);
+		if (plainSide != ItemPipeBlock.Side.CONNECTED) fails.add("A pipe on a default machine side should start connected (is " + plainSide + ")");
+		expect(fails, level, l.offset(5, 0, 12), 0, ModItems.IRON_DUST, 4, "No wrench: crusher output (4 iron dust) piped into a chest");
+		Container plain = (Container) level.getBlockEntity(l.offset(2, 0, 12));
+		if (!plain.getItem(1).isEmpty()) fails.add("Pipe should pull the crusher's output without the wrench (left " + plain.getItem(1) + ")");
+		Container outChest = (Container) level.getBlockEntity(l.offset(5, 0, 12));
+		for (int i = 0; i < outChest.getContainerSize(); i++) {
+			if (outChest.getItem(i).is(Items.RAW_IRON)) fails.add("Pipe must not pull a machine's unprocessed input");
+		}
+		ItemStack furnaceIn = ((Container) level.getBlockEntity(l.offset(4, 0, 13))).getItem(0);
+		if (!furnaceIn.isEmpty()) fails.add("Auto-pulled machine output must only go to chests, not other machines (furnace got " + furnaceIn + ")");
+
+		// Row 6: filter
+		Container a = (Container) level.getBlockEntity(l.offset(4, 0, 15));
+		Container b = (Container) level.getBlockEntity(l.offset(2, 0, 17));
+		int aIron = count(a, Items.RAW_IRON), aCobble = count(a, Items.COBBLESTONE);
+		int bIron = count(b, Items.RAW_IRON), bCobble = count(b, Items.COBBLESTONE);
+		System.out.println("[voltworks-test] Filter pipe: chest A (behind filter) " + aIron + " raw iron + " + aCobble + " cobble; chest B "
+				+ bIron + " raw iron + " + bCobble + " cobble");
+		if (aCobble != 0) fails.add("Filter pipe (allow raw iron) must keep cobblestone out of chest A (" + aCobble + " got in)");
+		if (aIron == 0) fails.add("Filter pipe should let raw iron through to chest A");
+		if (aIron + bIron != 8 || bCobble != 8) fails.add("All 16 items should arrive somewhere (A " + aIron + "+" + aCobble + ", B " + bIron + "+" + bCobble + ")");
+		Component refused = WrenchItem.toggleExtract(level, l.offset(2, 0, 15), Direction.EAST);
+		if (ItemPipeBlock.get(level.getBlockState(l.offset(2, 0, 15)), Direction.EAST) != ItemPipeBlock.Side.CONNECTED) {
+			fails.add("Sneak-wrenching a pipe-to-pipe join must not make it extract (" + refused.getString() + ")");
+		}
+
+		// Rows 7-8: tiers. Basic (4/s) is still busy with 256 items; express (64/s) has finished.
+		BlockPos basicSrc = l.offset(0, 0, 19), expressSrc = l.offset(0, 0, 21);
+		int basicMoved = count((Container) level.getBlockEntity(basicSrc.offset(4, 0, 0)), Items.COBBLESTONE);
+		int expressMoved = count((Container) level.getBlockEntity(expressSrc.offset(4, 0, 0)), Items.COBBLESTONE);
+		ItemPipeBlockEntity basicPipe = (ItemPipeBlockEntity) level.getBlockEntity(basicSrc.offset(1, 0, 0));
+		System.out.println("[voltworks-test] Pipe tiers: basic delivered " + basicMoved + "/256 (" + basicPipe.getTransits().size()
+				+ " batches in flight), express delivered " + expressMoved + "/256");
+		if (expressMoved != 256) fails.add("Express pipes should have moved all 256 items (" + expressMoved + ")");
+		if (basicMoved <= 0 || basicMoved >= 256) fails.add("Basic pipes (4 items/s) should still be moving the 256 items (" + basicMoved + " so far)");
+		if (basicPipe.getTransits().isEmpty()) fails.add("Basic pipe should have items travelling in it");
+		else {
+			double[] p = basicPipe.getTransits().get(0).positionAt(level.getGameTime());
+			BlockPos inside = BlockPos.containing(p[0], p[1], p[2]);
+			if (inside.getZ() != basicSrc.getZ() || inside.getX() < basicSrc.getX() || inside.getX() > basicSrc.getX() + 4) {
+				fails.add("A travelling item should be inside the basic pipe line (at " + inside + ")");
+			}
+		}
+	}
+
+	/*
+	 * Batteries, uranium and computer storage, on a platform behind the camera (C = origin + (2, 0, -16)), west -> east:
+	 *   z=0:  SMALL . LARGE . HUGE battery                              -> capacity / throughput per tier
+	 *   z=3:  MEDIUM battery (full) -> URANIUM REFINER (2 raw uranium)  -> 2 refined uranium
+	 *   z=6:  MEDIUM battery (full) -> DRIVE RACK (small + medium drive) - data cable - TERMINAL - CRAFTER
+	 *   z=7:  an unpowered DRIVE RACK touching the terminal, holding a drive with diamonds -> must stay invisible
+	 */
+	private static BlockPos computersOrigin(BlockPos o) {
+		return o.offset(2, 0, -16);
+	}
+
+	private static void fillBattery(ServerLevel level, BlockPos pos) {
+		BatteryBlockEntity battery = (BatteryBlockEntity) level.getBlockEntity(pos);
+		while (battery.receiveEnergy(Integer.MAX_VALUE, false) > 0) {
+		}
+	}
+
+	private static void buildComputers(ServerLevel level, BlockPos o) {
+		BlockPos c = computersOrigin(o);
+		for (int x = -2; x <= 8; x++) for (int z = -2; z <= 9; z++) level.setBlockAndUpdate(c.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+
+		place(level, c, ModBlocks.SMALL_BATTERY);
+		place(level, c.offset(2, 0, 0), ModBlocks.LARGE_BATTERY);
+		place(level, c.offset(4, 0, 0), ModBlocks.HUGE_BATTERY);
+
+		place(level, c.offset(0, 0, 3), ModBlocks.BATTERY_BOX);
+		fillBattery(level, c.offset(0, 0, 3));
+		place(level, c.offset(1, 0, 3), ModBlocks.URANIUM_REFINER);
+		put(level, c.offset(1, 0, 3), 0, ModItems.RAW_URANIUM, 2);
+
+		place(level, c.offset(0, 0, 6), ModBlocks.BATTERY_BOX);
+		fillBattery(level, c.offset(0, 0, 6));
+		place(level, c.offset(1, 0, 6), ModBlocks.DRIVE_RACK);
+		put(level, c.offset(1, 0, 6), 0, ModItems.SMALL_HARD_DRIVE, 1);
+		put(level, c.offset(1, 0, 6), 1, ModItems.MEDIUM_HARD_DRIVE, 1);
+		placePipe(level, c.offset(2, 0, 6), ModBlocks.DATA_CABLE);
+		place(level, c.offset(3, 0, 6), ModBlocks.STORAGE_TERMINAL);
+		place(level, c.offset(4, 0, 6), ModBlocks.COMPUTER_CRAFTER);
+		place(level, c.offset(3, 0, 7), ModBlocks.DRIVE_RACK);
+		ItemStack diamonds = new ItemStack(ModItems.MEDIUM_HARD_DRIVE);
+		HardDriveItem.setContents(diamonds, DriveContents.EMPTY.add(new ItemStack(Items.DIAMOND), 5));
+		((Container) level.getBlockEntity(c.offset(3, 0, 7))).setItem(0, diamonds);
+	}
+
+	private static void checkComputers(List<String> fails, ServerLevel level, MinecraftServer server, BlockPos o) {
+		BlockPos c = computersOrigin(o);
+
+		// Batteries: capacity and per-tick throughput
+		int[][] expected = {{25_000, 128}, {1_000_000, 2_048}, {10_000_000, 8_192}};
+		for (int i = 0; i < 3; i++) {
+			BatteryBlockEntity b = (BatteryBlockEntity) level.getBlockEntity(c.offset(i * 2, 0, 0));
+			int cap = b.getMaxEnergy(), io = b.receiveEnergy(Integer.MAX_VALUE, true);
+			if (cap != expected[i][0] || io != expected[i][1]) {
+				fails.add(b.tier() + " battery should hold " + expected[i][0] + " J at " + expected[i][1] + " J/t (got " + cap + " J, " + io + " J/t)");
+			}
+		}
+		BatteryBlockEntity medium = (BatteryBlockEntity) level.getBlockEntity(c.offset(0, 0, 3));
+		System.out.println("[voltworks-test] Batteries: small/medium/large/huge capacities ok; refiner battery left with " + medium.getEnergy() + " J");
+
+		// Uranium: refined, never smelted or crushed
+		expect(fails, level, c.offset(1, 0, 3), 1, ModItems.REFINED_URANIUM, 2, "Uranium Refiner: 2 raw uranium -> 2 refined uranium");
+		if (CrusherRecipes.has(new ItemStack(ModItems.RAW_URANIUM))) fails.add("The Crusher must not accept raw uranium any more");
+		if (UraniumRefinerBlockEntity.refine(new ItemStack(ModItems.DEPLETED_FUEL_ROD)).isEmpty()) fails.add("Refiner should reprocess spent fuel rods");
+		for (String gone : List.of("uranium_ingot_from_smelting_raw_uranium", "uranium_ingot_from_blasting_uranium_ore")) {
+			if (server.getRecipeManager().byKey(ResourceKey.create(Registries.RECIPE, Voltworks.id(gone))).isPresent()) {
+				fails.add("Uranium must not be smeltable (found recipe " + gone + ")");
+			}
+		}
+
+		// Silicon from the Alloy Smelter
+		var silicon = AlloyRecipes.find(new ItemStack(Items.SAND, 2), new ItemStack(Items.COAL, 1));
+		if (silicon.isEmpty() || !silicon.get().recipe().result().is(ModItems.SILICON)) fails.add("Alloy Smelter: 2 sand + coal should make silicon");
+
+		// Storage network: the powered rack's 2 drives only; the unpowered rack's diamonds stay invisible
+		BlockPos terminal = c.offset(3, 0, 6), crafter = c.offset(4, 0, 6);
+		StorageNetwork net = StorageNetwork.find(level, terminal);
+		System.out.println("[voltworks-test] Storage network: online=" + net.isOnline() + ", " + net.driveCount() + " drives, capacity " + net.capacity());
+		if (!net.isOnline() || net.driveCount() != 2 || net.capacity() != 1_024 + 4_096) {
+			fails.add("Network should be online with 2 drives / 5,120 items (online=" + net.isOnline() + ", " + net.driveCount() + " drives, " + net.capacity() + ")");
+		}
+		if (net.count(new ItemStack(Items.DIAMOND)) != 0) fails.add("Drives in an unpowered rack must be offline");
+
+		// Computer Crafter: pattern = 2 planks stacked -> 4 sticks; 8 planks in storage -> 4 crafts
+		net.insert(new ItemStack(Items.OAK_PLANKS, 8));
+		ComputerCrafterBlockEntity crafterBe = (ComputerCrafterBlockEntity) level.getBlockEntity(crafter);
+		crafterBe.getPattern().setItem(0, new ItemStack(Items.OAK_PLANKS));
+		crafterBe.getPattern().setItem(3, new ItemStack(Items.OAK_PLANKS));
+		int crafted = ComputerCrafterBlockEntity.craft(level, crafter, crafterBe.getPattern(), 64, null);
+		long sticks = net.count(new ItemStack(Items.STICK)), planks = net.count(new ItemStack(Items.OAK_PLANKS));
+		System.out.println("[voltworks-test] Computer Crafter: " + crafted + " crafts -> " + sticks + " sticks, " + planks + " planks left");
+		if (crafted != 4 || sticks != 16 || planks != 0) fails.add("Crafter should turn 8 planks into 16 sticks from storage (" + crafted + " crafts, " + sticks + " sticks, " + planks + " planks)");
+
+		// Terminal: take a stack straight into the player's inventory through the menu
+		net.insert(new ItemStack(Items.COBBLESTONE, 64));
+		ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+		command(server, String.format("tp @a %d %d %d 0 30", terminal.getX(), terminal.getY() + 1, terminal.getZ() - 2));
+		player.openMenu((MenuProvider) level.getBlockEntity(terminal));
+		if (player.containerMenu instanceof NetworkMenu menu) {
+			int before = player.getInventory().countItem(Items.COBBLESTONE);
+			menu.handleAction(player, new ItemStack(Items.COBBLESTONE), NetworkMenu.ACTION_TAKE_TO_INV, 0);
+			int got = player.getInventory().countItem(Items.COBBLESTONE) - before;
+			if (got != 64) fails.add("Terminal shift-click should move 64 cobblestone into the inventory (moved " + got + ")");
+			player.closeContainer();
+			player.getInventory().clearContent();
+		} else {
+			fails.add("Storage Terminal should open its menu");
+		}
+
+		// Capacity: fill both drives (16 sticks already in), then nothing more fits
+		int stored = net.insert(new ItemStack(Items.DIRT, 64), false);
+		int total = stored;
+		while (stored > 0) total += stored = net.insert(new ItemStack(Items.DIRT, 64), false);
+		System.out.println("[voltworks-test] Storage filled: " + net.used() + "/" + net.capacity() + " (" + total + " dirt stored)");
+		if (net.used() != net.capacity()) fails.add("Storage should fill to exactly its capacity (" + net.used() + "/" + net.capacity() + ")");
+		ItemStack small = ((Container) level.getBlockEntity(c.offset(1, 0, 6))).getItem(0);
+		if (HardDriveItem.contents(small).total() != 1_024) fails.add("The small drive should hold its 1,024 items on the item itself");
+
+		// Type limit: a drive takes at most 63 kinds of item
+		ItemStack drive = new ItemStack(ModItems.HUGE_HARD_DRIVE);
+		DriveContents contents = DriveContents.EMPTY;
+		int kinds = 0;
+		for (Item item : BuiltInRegistries.ITEM) {
+			if (kinds == HardDriveItem.MAX_TYPES) break;
+			if (item == Items.AIR) continue;
+			contents = contents.add(new ItemStack(item), 1);
+			kinds++;
+		}
+		HardDriveItem.setContents(drive, contents);
+		if (((HardDriveItem) ModItems.HUGE_HARD_DRIVE).room(drive, new ItemStack(Items.STICK)) != 0
+				&& contents.countOf(new ItemStack(Items.STICK)) == 0) {
+			fails.add("A drive with 63 kinds of item must refuse a 64th");
+		}
 	}
 
 	private static ItemStack full(Item item) {

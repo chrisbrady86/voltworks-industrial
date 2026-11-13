@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["ICI", "CMC", "ICI"],
+  "key": { "I": "minecraft:iron_ingot", "C": "voltworks:silicon_chip", "M": "voltworks:machine_frame" },
+  "result": { "id": "voltworks:drive_rack", "count": 1 } }
