@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["FFF", "CMC", "CRC"],
+  "key": { "F": "minecraft:flint", "C": "minecraft:cobblestone", "M": "voltworks:machine_frame", "R": "minecraft:redstone" },
+  "result": { "id": "voltworks:crusher", "count": 1 } }

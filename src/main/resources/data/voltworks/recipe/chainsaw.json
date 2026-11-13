@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": [" II", "IRI", "BI "],
+  "key": { "I": "minecraft:iron_ingot", "R": "minecraft:redstone", "B": "voltworks:power_cell" },
+  "result": { "id": "voltworks:chainsaw", "count": 1 } }

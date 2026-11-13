@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["CTC", "RSR", "CTC"],
+  "key": { "C": "voltworks:copper_cable", "T": "voltworks:tin_ingot", "R": "minecraft:redstone", "S": "voltworks:steel_ingot" },
+  "result": { "id": "voltworks:circuit", "count": 2 } }

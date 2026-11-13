@@ -1,0 +1,2 @@
+{ "type": "minecraft:blasting", "cookingtime": 100, "experience": 0.7,
+  "ingredient": "voltworks:deepslate_lead_ore", "result": { "id": "voltworks:lead_ingot" } }

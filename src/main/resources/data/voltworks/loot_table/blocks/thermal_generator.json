@@ -1,0 +1,4 @@
+{ "type": "minecraft:block", "pools": [ { "rolls": 1,
+  "condition": { "type": "minecraft:survives_explosion" },
+  "entries": [ { "type": "minecraft:item", "name": "voltworks:thermal_generator" } ] } ],
+  "random_sequence": "voltworks:blocks/thermal_generator" }

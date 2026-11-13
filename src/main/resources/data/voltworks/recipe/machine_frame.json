@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["III", "IRI", "III"],
+  "key": { "I": "minecraft:iron_ingot", "R": "minecraft:redstone" },
+  "result": { "id": "voltworks:machine_frame", "count": 1 } }

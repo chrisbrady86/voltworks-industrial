@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": [" D ", "DXD", "CSC"],
+  "key": { "D": "minecraft:diamond", "X": "voltworks:electric_drill", "C": "voltworks:circuit", "S": "voltworks:steel_ingot" },
+  "result": { "id": "voltworks:advanced_drill", "count": 1 } }

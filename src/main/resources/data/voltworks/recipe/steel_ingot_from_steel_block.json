@@ -1,0 +1,2 @@
+{ "type": "minecraft:crafting_shapeless", "ingredients": ["voltworks:steel_block"],
+  "result": { "id": "voltworks:steel_ingot", "count": 9 } }

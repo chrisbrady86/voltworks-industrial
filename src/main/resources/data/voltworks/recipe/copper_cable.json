@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["CCC"],
+  "key": { "C": "minecraft:copper_ingot" },
+  "result": { "id": "voltworks:copper_cable", "count": 6 } }

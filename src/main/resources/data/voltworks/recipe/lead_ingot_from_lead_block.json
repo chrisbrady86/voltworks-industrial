@@ -1,0 +1,2 @@
+{ "type": "minecraft:crafting_shapeless", "ingredients": ["voltworks:lead_block"],
+  "result": { "id": "voltworks:lead_ingot", "count": 9 } }

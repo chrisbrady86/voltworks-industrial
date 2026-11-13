@@ -1,0 +1,2 @@
+{ "type": "minecraft:blasting", "cookingtime": 100, "experience": 0.5,
+  "ingredient": "voltworks:copper_dust", "result": { "id": "minecraft:copper_ingot" } }

@@ -1,0 +1,2 @@
+{ "parent": "minecraft:block/cube_bottom_top",
+  "textures": { "top": "voltworks:block/solar_panel_top", "side": "voltworks:block/machine_side", "bottom": "voltworks:block/machine_top" } }

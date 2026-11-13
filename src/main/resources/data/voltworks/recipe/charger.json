@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["CBC", "RMR", "CCC"],
+  "key": { "C": "minecraft:copper_ingot", "B": "voltworks:power_cell", "R": "minecraft:redstone", "M": "voltworks:machine_frame" },
+  "result": { "id": "voltworks:charger", "count": 1 } }

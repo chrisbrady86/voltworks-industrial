@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["BBB", "FMF", "BRB"],
+  "key": { "B": "minecraft:bricks", "F": "minecraft:furnace", "M": "voltworks:machine_frame", "R": "minecraft:redstone" },
+  "result": { "id": "voltworks:alloy_smelter", "count": 1 } }

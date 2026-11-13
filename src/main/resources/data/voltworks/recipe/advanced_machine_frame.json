@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["SCS", "CMC", "SCS"],
+  "key": { "S": "voltworks:steel_ingot", "C": "voltworks:circuit", "M": "voltworks:machine_frame" },
+  "result": { "id": "voltworks:advanced_machine_frame", "count": 1 } }

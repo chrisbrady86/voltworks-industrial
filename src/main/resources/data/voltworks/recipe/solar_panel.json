@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["GGG", "CDC", "CMC"],
+  "key": { "G": "minecraft:glass", "C": "minecraft:copper_ingot", "D": "minecraft:daylight_detector", "M": "voltworks:machine_frame" },
+  "result": { "id": "voltworks:solar_panel", "count": 1 } }

@@ -1,0 +1,2 @@
+{ "type": "minecraft:smelting", "cookingtime": 200, "experience": 0.7,
+  "ingredient": "voltworks:uranium_dust", "result": { "id": "voltworks:uranium_ingot" } }

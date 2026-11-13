@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": [" C ", "XAX", " C "],
+  "key": { "C": "voltworks:circuit", "X": "voltworks:crusher", "A": "voltworks:advanced_machine_frame" },
+  "result": { "id": "voltworks:industrial_crusher", "count": 1 } }

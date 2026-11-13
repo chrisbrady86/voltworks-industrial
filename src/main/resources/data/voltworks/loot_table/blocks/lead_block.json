@@ -1,0 +1,4 @@
+{ "type": "minecraft:block", "pools": [ { "rolls": 1,
+  "condition": { "type": "minecraft:survives_explosion" },
+  "entries": [ { "type": "minecraft:item", "name": "voltworks:lead_block" } ] } ],
+  "random_sequence": "voltworks:blocks/lead_block" }

@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"id": "voltworks",
+	"version": "${version}",
+	"name": "Voltworks",
+	"description": "Industrial machines: generators, crushers, electric furnaces and power cables.",
+	"authors": ["You"],
+	"license": "MIT",
+	"icon": "assets/voltworks/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["dev.voltworks.Voltworks"],
+		"client": ["dev.voltworks.client.VoltworksClient"]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

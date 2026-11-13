@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": [" C ", "EAE", " C "],
+  "key": { "C": "voltworks:circuit", "E": "voltworks:electric_furnace", "A": "voltworks:advanced_machine_frame" },
+  "result": { "id": "voltworks:induction_furnace", "count": 1 } }

@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"id": "voltworks-test",
+	"version": "1.0.0",
+	"name": "Voltworks Tests",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-client-gametest": ["dev.voltworks.test.VoltworksClientGameTest"]
+	},
+	"depends": {
+		"voltworks": "*"
+	}
+}

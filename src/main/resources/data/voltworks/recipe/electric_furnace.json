@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": [" R ", "CFC", "CMC"],
+  "key": { "R": "minecraft:redstone", "C": "minecraft:copper_ingot", "F": "minecraft:furnace", "M": "voltworks:machine_frame" },
+  "result": { "id": "voltworks:electric_furnace", "count": 1 } }

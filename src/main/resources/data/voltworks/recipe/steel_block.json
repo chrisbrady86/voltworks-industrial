@@ -1,0 +1,2 @@
+{ "type": "minecraft:crafting_shaped", "pattern": ["###", "###", "###"],
+  "key": { "#": "voltworks:steel_ingot" }, "result": { "id": "voltworks:steel_block" } }

@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/orientable", "textures": { "front": "voltworks:block/alloy_smelter_front_on", "side": "voltworks:block/machine_side", "top": "voltworks:block/machine_top" } }

@@ -1,0 +1,10 @@
+{ "variants": {
+  "facing=north,lit=false": { "model": "voltworks:block/solar_panel" },
+  "facing=north,lit=true": { "model": "voltworks:block/solar_panel" },
+  "facing=east,lit=false": { "model": "voltworks:block/solar_panel" },
+  "facing=east,lit=true": { "model": "voltworks:block/solar_panel" },
+  "facing=south,lit=false": { "model": "voltworks:block/solar_panel" },
+  "facing=south,lit=true": { "model": "voltworks:block/solar_panel" },
+  "facing=west,lit=false": { "model": "voltworks:block/solar_panel" },
+  "facing=west,lit=true": { "model": "voltworks:block/solar_panel" }
+} }

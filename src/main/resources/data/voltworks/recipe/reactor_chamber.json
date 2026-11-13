@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["LCL", "CAC", "LCL"],
+  "key": { "L": "voltworks:lead_block", "C": "voltworks:circuit", "A": "voltworks:advanced_machine_frame" },
+  "result": { "id": "voltworks:reactor_chamber", "count": 1 } }

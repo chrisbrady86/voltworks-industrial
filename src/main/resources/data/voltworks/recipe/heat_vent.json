@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["SBS", "BCB", "SBS"],
+  "key": { "S": "voltworks:steel_ingot", "B": "minecraft:iron_bars", "C": "minecraft:copper_ingot" },
+  "result": { "id": "voltworks:heat_vent", "count": 1 } }

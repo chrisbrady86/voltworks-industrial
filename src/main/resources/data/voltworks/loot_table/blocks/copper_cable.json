@@ -1,0 +1,4 @@
+{ "type": "minecraft:block", "pools": [ { "rolls": 1,
+  "condition": { "type": "minecraft:survives_explosion" },
+  "entries": [ { "type": "minecraft:item", "name": "voltworks:copper_cable" } ] } ],
+  "random_sequence": "voltworks:blocks/copper_cable" }
