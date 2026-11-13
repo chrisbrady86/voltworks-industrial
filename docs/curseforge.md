@@ -14,10 +14,10 @@ Everything needed to create the Voltworks project and upload the first file. Cop
 | License | MIT License |
 | Logo | `docs/images/logo.png` (400×400) |
 | Screenshots (Images tab) | From `docs/images/`: `power.png`, `machines.png`, `reactor.png`, `pipes.png`, `storage.png`, `crusher-gui.png`, `storage-terminal.png`, `guide-book.png` |
-
-The description below shows these same pictures straight from the GitHub repo (`raw.githubusercontent.com/.../main/docs/images/...`), so they appear once the images are pushed to GitHub.
 | Source link | https://github.com/chrisbrady86/voltworks-industrial |
 | Issues link | https://github.com/chrisbrady86/voltworks-industrial/issues |
+
+The description below shows these same pictures straight from the GitHub repo (`raw.githubusercontent.com/.../main/docs/images/...`), so they appear once the images are pushed to GitHub.
 
 ## First file upload
 
