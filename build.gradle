@@ -9,6 +9,11 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	maven {
+		name = "BlameJared (JEI)"
+		url = "https://maven.blamejared.com/"
+		content { includeGroup "mezz.jei"; includeGroup "net.mezzdev.config" }
+	}
 }
 
 loom {
@@ -29,6 +34,12 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// JEI: compile against its API only. The Computer Crafter's recipe transfer is used when JEI is installed.
+	compileOnly "mezz.jei:jei-${project.minecraft_version}-common-api:${project.jei_version}"
+	compileOnly "mezz.jei:jei-${project.minecraft_version}-fabric-api:${project.jei_version}"
+	clientCompileOnly "mezz.jei:jei-${project.minecraft_version}-common-api:${project.jei_version}"
+	clientCompileOnly "mezz.jei:jei-${project.minecraft_version}-fabric-api:${project.jei_version}"
 }
 
 processResources {
@@ -89,4 +100,10 @@ fabricApi {
 		enableClientGameTests = true
 		eula = false
 	}
+}
+
+// The in-game test runs with the full JEI (declared after fabricApi creates the gametest source set),
+// so the Computer Crafter's JEI plugin is loaded and registered for real.
+dependencies {
+	gametestRuntimeOnly "mezz.jei:jei-${project.minecraft_version}-fabric:${project.jei_version}"
 }

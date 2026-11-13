@@ -128,11 +128,11 @@ public class GenAssets {
 			itemDef(item, "voltworks:item/" + item);
 		}
 		// All use a circuit + tin; the centre ingredient picks the upgrade.
-		shapedN("speed_upgrade", 2, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
+		shapedN("speed_upgrade", 1, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
 				"C", "voltworks:circuit", "X", "minecraft:gold_ingot");
-		shapedN("capacity_upgrade", 2, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
+		shapedN("capacity_upgrade", 1, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
 				"C", "voltworks:circuit", "X", "voltworks:power_cell");
-		shapedN("ejector_upgrade", 2, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
+		shapedN("ejector_upgrade", 1, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
 				"C", "voltworks:circuit", "X", "minecraft:hopper");
 	}
 
@@ -1193,6 +1193,10 @@ public class GenAssets {
 		lang.put("block.voltworks.fast_item_pipe", "Fast Item Pipe");
 		lang.put("block.voltworks.express_item_pipe", "Express Item Pipe");
 		lang.put("block.voltworks.filter_pipe", "Filter Pipe");
+		lang.put("tooltip.voltworks.pipe.machines", "Machines empty into chests automatically");
+		lang.put("tooltip.voltworks.pipe.chests", "To pull from a chest: sneak + right-click that pipe arm with a Wrench (Extract)");
+		lang.put("jei.voltworks.crafter.missing", "Not in storage (highlighted)");
+		lang.put("jei.voltworks.crafter.still_set", "The pattern is set anyway");
 		lang.put("gui.voltworks.filter.allow", "Allow");
 		lang.put("gui.voltworks.filter.deny", "Deny");
 		lang.put("gui.voltworks.filter.allow.hint", "Only items in the filter pass. An empty filter lets everything through. Click to switch to Deny.");

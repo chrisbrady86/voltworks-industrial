@@ -511,7 +511,7 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 
 	private static void buildLogistics(ServerLevel level, BlockPos o) {
 		BlockPos l = logisticsOrigin(o);
-		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 22; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 27; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
 
 		// Row 1: chest -> chest across three pipes, first arm switched to extract with the wrench
 		level.setBlockAndUpdate(l, Blocks.CHEST.defaultBlockState());
@@ -571,6 +571,17 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		put(level, s, 0, Items.RAW_IRON, 8);
 		put(level, s, 1, Items.COBBLESTONE, 8);
 		WrenchItem.toggleExtract(level, l.offset(1, 0, 15), Direction.WEST);
+
+		// Rows 9-10: chest -> pipe -> pipe -> crusher; z=24 with the chest arm set to Extract, z=26 left plain
+		for (int z : new int[]{24, 26}) {
+			BlockPos chest = l.offset(0, 0, z);
+			level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
+			place(level, chest.offset(3, 0, 0), ModBlocks.CRUSHER);
+			placePipe(level, chest.offset(1, 0, 0));
+			placePipe(level, chest.offset(2, 0, 0));
+			put(level, chest, 0, Items.RAW_IRON, 8);
+			if (z == 24) WrenchItem.toggleExtract(level, chest.offset(1, 0, 0), Direction.WEST);
+		}
 
 		// Rows 7-8: the same 3-pipe line in basic and express pipes, 256 cobblestone each
 		for (int[] row : new int[][]{{19, 0}, {21, 1}}) {
@@ -651,6 +662,10 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (ItemPipeBlock.get(level.getBlockState(l.offset(2, 0, 15)), Direction.EAST) != ItemPipeBlock.Side.CONNECTED) {
 			fails.add("Sneak-wrenching a pipe-to-pipe join must not make it extract (" + refused.getString() + ")");
 		}
+
+		// Rows 9-10: chest feeding a crusher (unpowered, so the raw iron waits in its input slot)
+		expect(fails, level, l.offset(3, 0, 24), 0, Items.RAW_IRON, 8, "Chest (arm on Extract) -> pipes -> crusher input: 8 raw iron");
+		expect(fails, level, l.offset(0, 0, 26), 0, Items.RAW_IRON, 8, "Chest with a plain (not Extract) arm keeps its 8 raw iron");
 
 		// Rows 7-8: tiers. Basic (4/s) is still busy with 256 items; express (64/s) has finished.
 		BlockPos basicSrc = l.offset(0, 0, 19), expressSrc = l.offset(0, 0, 21);

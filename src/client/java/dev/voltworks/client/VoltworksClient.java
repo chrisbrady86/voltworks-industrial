@@ -1,5 +1,6 @@
 package dev.voltworks.client;
 
+import dev.voltworks.block.ItemPipeBlock;
 import dev.voltworks.item.GuideBookItem;
 import dev.voltworks.menu.MachineMenu;
 import dev.voltworks.menu.NetworkMenu;
@@ -16,6 +17,9 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.world.item.BlockItem;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 
 public class VoltworksClient implements ClientModInitializer {
 	@Override
@@ -24,6 +28,13 @@ public class VoltworksClient implements ClientModInitializer {
 			MenuScreens.register(ModMenus.get(kind), MachineScreen::new);
 		}
 		MenuScreens.register(ModMenus.FILTER, FilterScreen::new);
+		// Pipe items explain the one thing that isn't automatic: pulling items out of a chest
+		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> {
+			if (stack.getItem() instanceof BlockItem bi && bi.getBlock() instanceof ItemPipeBlock) {
+				lines.add(Component.translatable("tooltip.voltworks.pipe.machines").withStyle(ChatFormatting.GRAY));
+				lines.add(Component.translatable("tooltip.voltworks.pipe.chests").withStyle(ChatFormatting.YELLOW));
+			}
+		});
 		MenuScreens.register(ModMenus.STORAGE_TERMINAL, StorageTerminalScreen::new);
 		MenuScreens.register(ModMenus.COMPUTER_CRAFTER, ComputerCrafterScreen::new);
 		ClientPlayNetworking.registerGlobalReceiver(StorageViewPayload.TYPE, (payload, context) -> {
