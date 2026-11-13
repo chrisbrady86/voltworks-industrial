@@ -1,4 +1,4 @@
-# CurseForge release kit
+# CurseForge release kit (Voltworks Industrial)
 
 Everything needed to create the Voltworks project and upload the first file. Copy the fields below into the CurseForge author console.
 
@@ -6,7 +6,7 @@ Everything needed to create the Voltworks project and upload the first file. Cop
 
 | Field | Value |
 |---|---|
-| Name | Voltworks |
+| Name | Voltworks Industrial |
 | Summary (one line) | Industrial tech: power networks, ore crushers, electric furnaces, power tools and a nuclear reactor. |
 | Game / type | Minecraft / Mods |
 | Main category | Technology |
@@ -21,7 +21,7 @@ Everything needed to create the Voltworks project and upload the first file. Cop
 | Field | Value |
 |---|---|
 | File | `build/libs/voltworks-0.1.0.jar` (not the `-sources` jar) |
-| Display name | Voltworks 0.1.0 |
+| Display name | Voltworks Industrial 0.1.0 |
 | Release type | Beta |
 | Game version | 26.3 |
 | Mod loader | Fabric |
@@ -44,11 +44,11 @@ First public release.
 ## Project description (paste into the description editor, Markdown mode)
 
 ```markdown
-# Voltworks
+# Voltworks Industrial
 
 **Build a power grid, automate your ore processing, and run a nuclear reactor — without blowing up your base. (Probably.)**
 
-Voltworks is an industrial tech mod for Fabric. Generate power, carry it through copper cables, and feed it to machines that double (or triple) your ore output.
+Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through copper cables, and feed it to machines that double (or triple) your ore output.
 
 ## ⚡ Power
 - **Generator** — burns any furnace fuel for 10 J/t.
@@ -92,11 +92,11 @@ The Reactor Chamber has a 3×3 grid for **Fuel Rods** and **Heat Vents**.
 - Fabric Loader
 - [Fabric API](https://www.curseforge.com/minecraft/mc-mods/fabric-api)
 
-Modpacks: yes, go ahead! Voltworks is MIT licensed.
+Modpacks: yes, go ahead! Voltworks Industrial is MIT licensed.
 ```
 
 ## Before you click upload
 
 - [ ] `./gradlew build` and grab the fresh jar from `build/libs/`
-- [ ] Search CurseForge for "Voltworks" to make sure the name is free
+- [x] Name: "Voltworks" was taken on CurseForge, so the project is "Voltworks Industrial"
 - [ ] Test the jar once in a normal Minecraft install (Fabric Loader + Fabric API) to be sure it loads outside the dev environment

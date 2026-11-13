@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"id": "voltworks",
 	"version": "${version}",
-	"name": "Voltworks",
+	"name": "Voltworks Industrial",
 	"description": "Industrial tech: generators, solar and nuclear power, copper cables, ore crushers, electric furnaces, machine upgrades and power tools.",
 	"authors": ["Voltworks Team"],
 	"license": "MIT",

@@ -709,7 +709,7 @@ public class GenAssets {
 
 		write("assets/voltworks/lang/en_us.json", """
 			{
-			  "itemGroup.voltworks": "Voltworks",
+			  "itemGroup.voltworks": "Voltworks Industrial",
 			  "block.voltworks.generator": "Generator",
 			  "block.voltworks.crusher": "Crusher",
 			  "block.voltworks.electric_furnace": "Electric Furnace",

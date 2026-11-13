@@ -1,4 +1,4 @@
-# Voltworks
+# Voltworks Industrial
 
 An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it through copper cables, and process ores with powered machines — up to a nuclear reactor.
 
