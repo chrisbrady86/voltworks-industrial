@@ -489,14 +489,69 @@ public class GenAssets {
 		};
 	}
 
+	/**
+	 * Ingot in the vanilla style: a bar lying diagonally (low-left to high-right), seen from above.
+	 * Built from three faces of a prism: a bright top face, a front face and a short left end,
+	 * then outlined. Shading is a multiplier on the metal colour, so every metal reads the same way.
+	 */
 	static void ingot(String path, int color) throws Exception {
+		// Top face corners (A back-left, B back-right, C front-right, D front-left); front/end faces drop by `h`.
+		double[][] top = {{0.5, 7.0}, {9.5, 2.5}, {15.0, 5.5}, {6.0, 10.0}};
+		double h = 3.0;
+		double[][] front = {top[3], top[2], {top[2][0], top[2][1] + h}, {top[3][0], top[3][1] + h}};
+		double[][] end = {top[0], top[3], {top[3][0], top[3][1] + h}, {top[0][0], top[0][1] + h}};
+		int[][] face = new int[16][16]; // 0 empty, 1 top, 2 front, 3 end
+		for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+			double px = x + 0.5, py = y + 0.5;
+			if (inPoly(px, py, top)) face[y][x] = 1;
+			else if (inPoly(px, py, front)) face[y][x] = 2;
+			else if (inPoly(px, py, end)) face[y][x] = 3;
+		}
 		png(path, (x, y, r) -> {
-			boolean top = y >= 5 && y <= 7 && x >= 4 + (7 - y) && x <= 11 - (7 - y) + 2;
-			boolean body = y >= 8 && y <= 11 && x >= 2 && x <= 13;
-			if (top) return shade(color, 45);
-			if (body) return y == 11 || x == 13 ? shade(color, -40) : shade(color, r.nextInt(7) - 3);
-			return 0;
+			int f = face[y][x];
+			if (f == 0) {
+				// 1px outline around the silhouette: lighter on the upper-left, darkest on the lower-right
+				boolean nearUpLeft = (x + 1 < 16 && face[y][x + 1] != 0) || (y + 1 < 16 && face[y + 1][x] != 0);
+				boolean nearDownRight = (x > 0 && face[y][x - 1] != 0) || (y > 0 && face[y - 1][x] != 0);
+				if (nearUpLeft) return mul(color, 0.62);
+				if (nearDownRight) return mul(color, 0.45);
+				return 0;
+			}
+			if (f == 1) {
+				// Top face: bright, with a highlight band along the back edge and near the right end
+				boolean backEdge = y == 0 || face[y - 1][x] == 0;
+				boolean rightEnd = x >= 12 && x + 1 < 16 && face[y][x + 1] == 0;
+				if (backEdge || rightEnd) return mul(color, 1.32);
+				double d = distToLine(x + 0.5, y + 0.5, top[0], top[1]);
+				return mul(color, d < 1.8 ? 1.22 : 1.1);
+			}
+			if (f == 2) {
+				// Front face: mid-tone, darkening toward the bottom edge
+				boolean bottom = y + 1 >= 16 || face[y + 1][x] == 0;
+				boolean upper = y > 0 && face[y - 1][x] == 1;
+				return mul(color, upper ? 0.95 : bottom ? 0.66 : 0.8);
+			}
+			// Left end: shadowed
+			return mul(color, 0.72);
 		});
+	}
+
+	static int mul(int c, double f) {
+		return rgb((int) Math.round(((c >> 16) & 255) * f), (int) Math.round(((c >> 8) & 255) * f), (int) Math.round((c & 255) * f));
+	}
+
+	static boolean inPoly(double px, double py, double[][] poly) {
+		boolean in = false;
+		for (int i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+			double xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+			if ((yi > py) != (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) in = !in;
+		}
+		return in;
+	}
+
+	static double distToLine(double px, double py, double[] a, double[] b) {
+		double dx = b[0] - a[0], dy = b[1] - a[1];
+		return Math.abs(dy * px - dx * py + b[0] * a[1] - b[1] * a[0]) / Math.hypot(dx, dy);
 	}
 
 	static boolean inRect(int x, int y, int x0, int y0, int x1, int y1) { return x >= x0 && x <= x1 && y >= y0 && y <= y1; }
