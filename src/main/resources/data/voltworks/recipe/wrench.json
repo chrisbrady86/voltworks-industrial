@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["I I", " T ", " I "],
+  "key": { "I": "minecraft:iron_ingot", "T": "voltworks:tin_ingot" },
+  "result": { "id": "voltworks:wrench", "count": 1 } }

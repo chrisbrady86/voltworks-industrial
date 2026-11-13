@@ -8,6 +8,7 @@ import dev.voltworks.block.entity.CrusherBlockEntity;
 import dev.voltworks.block.entity.ElectricFurnaceBlockEntity;
 import dev.voltworks.block.entity.GeneratorBlockEntity;
 import dev.voltworks.block.entity.InductionFurnaceBlockEntity;
+import dev.voltworks.block.entity.ItemPipeBlockEntity;
 import dev.voltworks.block.entity.IndustrialCrusherBlockEntity;
 import dev.voltworks.block.entity.ReactorBlockEntity;
 import dev.voltworks.block.entity.SolarPanelBlockEntity;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public final class ModBlockEntities {
+	public static final BlockEntityType<ItemPipeBlockEntity> ITEM_PIPE = register("item_pipe", ItemPipeBlockEntity::new, ModBlocks.ITEM_PIPE);
 	public static final BlockEntityType<GeneratorBlockEntity> GENERATOR = register("generator", GeneratorBlockEntity::new, ModBlocks.GENERATOR);
 	public static final BlockEntityType<CrusherBlockEntity> CRUSHER = register("crusher", CrusherBlockEntity::new, ModBlocks.CRUSHER);
 	public static final BlockEntityType<ElectricFurnaceBlockEntity> ELECTRIC_FURNACE =

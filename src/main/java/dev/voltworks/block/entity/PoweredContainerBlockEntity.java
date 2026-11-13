@@ -22,7 +22,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
 /** Base for machines with an inventory, an energy buffer and progress values shown in a GUI. */
-public abstract class PoweredContainerBlockEntity extends BaseContainerBlockEntity implements WorldlyContainer, VoltTicking {
+public abstract class PoweredContainerBlockEntity extends BaseContainerBlockEntity implements WorldlyContainer, VoltTicking, EnergyGauge {
 	public static final int DATA_COUNT = 5;
 
 	protected NonNullList<ItemStack> items;
@@ -76,8 +76,88 @@ public abstract class PoweredContainerBlockEntity extends BaseContainerBlockEnti
 		this.capacity = capacity; // keep <= 32767: GUI sync uses shorts
 	}
 
+	@Override
+	public int getStoredEnergy() {
+		return energy;
+	}
+
+	@Override
+	public int getMaxEnergy() {
+		return getCapacity();
+	}
+
 	public int getEnergy() {
 		return energy;
+	}
+
+	// ---------------- side configuration ----------------
+	/** Item input/output per side; set with the wrench. Default: every side both accepts and gives items (as before). */
+	protected final SideConfig sides = new SideConfig(this::defaultSideMode);
+
+	protected SideConfig.Mode defaultSideMode(SideConfig.Side side) {
+		return SideConfig.Mode.BOTH;
+	}
+
+	/** Slots that hoppers and pipes may insert into (when the side allows input). */
+	protected abstract int[] inputSlots();
+
+	/** Slots that hoppers and pipes may take from (when the side allows output). */
+	protected abstract int[] outputSlots();
+
+	/** Extra per-machine insertion rule on top of the side config, e.g. spreading items across lanes. */
+	protected boolean allowInsert(int slot, ItemStack stack) {
+		return true;
+	}
+
+	/** Extra per-machine extraction rule, e.g. only take fully charged tools. */
+	protected boolean allowExtract(int slot, ItemStack stack) {
+		return true;
+	}
+
+	public SideConfig.Side sideOf(Direction dir) {
+		BlockState state = getBlockState();
+		Direction facing = state.hasProperty(MachineBlock.FACING) ? state.getValue(MachineBlock.FACING) : Direction.NORTH;
+		return SideConfig.Side.of(facing, dir);
+	}
+
+	public SideConfig.Mode getSideMode(Direction dir) {
+		return sides.get(sideOf(dir));
+	}
+
+	public void setSideMode(Direction dir, SideConfig.Mode mode) {
+		sides.set(sideOf(dir), mode);
+		setChanged();
+	}
+
+	/** Wrench: advance this side to the next mode (none, input, output, both). */
+	public SideConfig.Mode cycleSideMode(Direction dir) {
+		SideConfig.Mode next = getSideMode(dir).next();
+		setSideMode(dir, next);
+		return next;
+	}
+
+	@Override
+	public int[] getSlotsForFace(Direction dir) {
+		SideConfig.Mode mode = getSideMode(dir);
+		int[] in = mode.input ? inputSlots() : new int[0];
+		int[] out = mode.output ? outputSlots() : new int[0];
+		return java.util.stream.IntStream.concat(java.util.Arrays.stream(in), java.util.Arrays.stream(out)).distinct().toArray();
+	}
+
+	@Override
+	public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @org.jspecify.annotations.Nullable Direction dir) {
+		if (dir != null && !getSideMode(dir).input) return false;
+		return contains(inputSlots(), slot) && canPlaceItem(slot, stack) && allowInsert(slot, stack);
+	}
+
+	@Override
+	public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction dir) {
+		return getSideMode(dir).output && contains(outputSlots(), slot) && allowExtract(slot, stack);
+	}
+
+	private static boolean contains(int[] slots, int slot) {
+		for (int s : slots) if (s == slot) return true;
+		return false;
 	}
 
 	// ---------------- upgrades ----------------
@@ -130,6 +210,9 @@ public abstract class PoweredContainerBlockEntity extends BaseContainerBlockEnti
 		}
 		ejectTimer = 0;
 		for (Direction dir : Direction.values()) {
+			if (!getSideMode(dir).output) {
+				continue; // the Ejector only pushes out of sides configured for output
+			}
 			Container target = HopperBlockEntity.getContainerAt(level, pos.relative(dir));
 			if (target == null || target == this) {
 				continue;
@@ -203,6 +286,10 @@ public abstract class PoweredContainerBlockEntity extends BaseContainerBlockEnti
 		this.progress = input.getIntOr("progress", 0);
 		this.progress2 = input.getIntOr("progress2", 0);
 		this.progressTotal = input.getIntOr("progress_total", this.progressTotal);
+		int packed = input.getIntOr("side_config", -1);
+		if (packed >= 0) {
+			sides.unpack(packed);
+		}
 	}
 
 	@Override
@@ -213,6 +300,7 @@ public abstract class PoweredContainerBlockEntity extends BaseContainerBlockEnti
 		output.putInt("progress", progress);
 		output.putInt("progress2", progress2);
 		output.putInt("progress_total", progressTotal);
+		output.putInt("side_config", sides.pack());
 	}
 
 	@Override

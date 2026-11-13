@@ -68,17 +68,22 @@ public class GeneratorBlockEntity extends PoweredContainerBlockEntity {
 	}
 
 	@Override
-	public int[] getSlotsForFace(Direction direction) {
+	protected SideConfig.Mode defaultSideMode(SideConfig.Side side) {
+		return SideConfig.Mode.BOTH; // fuel in from anywhere, empty buckets out from anywhere
+	}
+
+	@Override
+	protected int[] inputSlots() {
 		return SLOTS;
 	}
 
 	@Override
-	public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction direction) {
-		return canPlaceItem(slot, stack);
+	protected int[] outputSlots() {
+		return SLOTS;
 	}
 
 	@Override
-	public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction direction) {
+	protected boolean allowExtract(int slot, ItemStack stack) {
 		return !stack.has(DataComponents.COOKING_FUEL); // only pull out empty buckets
 	}
 

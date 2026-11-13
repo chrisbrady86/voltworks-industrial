@@ -70,27 +70,24 @@ public class AlloySmelterBlockEntity extends PoweredContainerBlockEntity impleme
 	}
 
 	@Override
-	public int[] getSlotsForFace(Direction direction) {
-		return direction == Direction.DOWN ? OUTPUTS : INPUTS;
+	protected int[] inputSlots() {
+		return INPUTS;
 	}
 
 	@Override
-	public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction direction) {
-		if (!canPlaceItem(slot, stack)) {
-			return false;
-		}
-		// Hoppers: keep the two ingredients in separate slots.
+	protected int[] outputSlots() {
+		return OUTPUTS;
+	}
+
+	@Override
+	protected boolean allowInsert(int slot, ItemStack stack) {
+		// Hoppers and pipes: keep the two ingredients in separate slots.
 		ItemStack other = items.get(1 - slot);
 		ItemStack current = items.get(slot);
 		if (current.isEmpty()) {
 			return other.isEmpty() || !ItemStack.isSameItemSameComponents(other, stack);
 		}
 		return ItemStack.isSameItemSameComponents(current, stack);
-	}
-
-	@Override
-	public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction direction) {
-		return slot == OUTPUT;
 	}
 
 	@Override

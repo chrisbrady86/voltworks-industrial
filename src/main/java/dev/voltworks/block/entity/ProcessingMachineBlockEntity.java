@@ -109,28 +109,19 @@ public abstract class ProcessingMachineBlockEntity extends PoweredContainerBlock
 	}
 
 	@Override
-	public int[] getSlotsForFace(Direction direction) {
-		if (direction == Direction.DOWN) {
-			return lanes == 1 ? ONE_LANE_OUT : TWO_LANE_OUT;
-		}
+	protected int[] inputSlots() {
 		return lanes == 1 ? ONE_LANE_IN : TWO_LANE_IN;
 	}
 
 	@Override
-	public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction direction) {
-		if (!canPlaceItem(slot, stack)) {
-			return false;
-		}
-		// Hoppers: spread items across lanes instead of always filling lane 0 first.
-		if (lanes == 2 && slot == 0 && !items.get(0).isEmpty() && items.get(2).isEmpty()) {
-			return false;
-		}
-		return true;
+	protected int[] outputSlots() {
+		return lanes == 1 ? ONE_LANE_OUT : TWO_LANE_OUT;
 	}
 
 	@Override
-	public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction direction) {
-		return slot % 2 == 1 && !isUpgradeSlot(slot);
+	protected boolean allowInsert(int slot, ItemStack stack) {
+		// Hoppers and pipes: spread items across lanes instead of always filling lane 0 first.
+		return !(lanes == 2 && slot == 0 && !items.get(0).isEmpty() && items.get(2).isEmpty());
 	}
 
 	@Override

@@ -30,6 +30,8 @@ public class GenAssets {
 		tools();
 		upgrades();
 		nuclear();
+		gauges();
+		logistics();
 		System.out.println("done");
 	}
 
@@ -268,7 +270,7 @@ public class GenAssets {
 	/** Original stone: mottled grey from two octaves of noise plus fine grain. */
 	static int originalStone(int x, int y) {
 		double v = 0.6 * noise(x, y, 8, 11) + 0.3 * noise(x, y, 4, 12) + 0.1 * noise(x, y, 2, 13);
-		int d = (int) Math.round((v - 0.5) * 44) + (hash(x, y, 14) > 0.85 ? -10 : 0);
+		int d = (int) Math.round((v - 0.5) * 56) + (hash(x, y, 14) > 0.82 ? -14 : 0) + (hash(x, y, 15) > 0.9 ? 12 : 0);
 		return shade(rgb(124, 124, 126), d);
 	}
 
@@ -280,46 +282,112 @@ public class GenAssets {
 		return shade(rgb(74, 74, 82), d);
 	}
 
-	/** Ore speckles: a few 2-3 pixel clusters with a highlight and a shadow. */
-	static boolean[][] oreMask(long seed) {
-		boolean[][] m = new boolean[16][16];
-		Random r = new Random(seed);
-		int[][] centers = {{3, 3}, {11, 2}, {7, 7}, {2, 11}, {12, 10}, {7, 13}};
-		for (int[] c : centers) {
-			int cx = c[0] + r.nextInt(2), cy = c[1] + r.nextInt(2);
-			m[cy][cx] = true;
-			if (cx + 1 < 16) m[cy][cx + 1] = true;
-			if (cy + 1 < 16) m[cy + 1][cx] = true;
-			if (r.nextBoolean() && cx + 1 < 16 && cy + 1 < 16) m[cy + 1][cx + 1] = true;
+	/**
+	 * Tone a colour: t in [-1, 1]. Negative darkens toward black, positive lightens toward white,
+	 * so light metals (tin) and dark ones (lead) both get a full shading ramp.
+	 */
+	static int tone(int c, double t) {
+		int r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+		if (t >= 0) {
+			return rgb((int) (r + (255 - r) * t * 0.75), (int) (g + (255 - g) * t * 0.75), (int) (b + (255 - b) * t * 0.75));
 		}
-		return m;
+		double f = 1 + t * 0.8;
+		return rgb((int) (r * f), (int) (g * f), (int) (b * f));
+	}
+
+	/** Snap a tone to pixel-art bands so shading reads as flat steps, like vanilla items. */
+	static double band(double t) {
+		return Math.round(t * 5) / 5.0;
+	}
+
+	/**
+	 * Ore block in the vanilla style: six chunky mineral clusters set into plain stone. Like vanilla ores,
+	 * each cluster is brightest in its middle and darkens toward its edges, with a little speckle.
+	 */
+	/** Hand-drawn mineral clusters. h highlight, l light, m mid, d dark edge, '.' = stone. */
+	static final String[][] ORE_STAMPS = {
+			{"..dmd.", ".dlhmd", "dmllm.", ".ddm.."},
+			{".dm...", "dlhmd.", ".mlhmd", "..dmd."},
+			{"dmd.", "mhld", "dlmm", ".dd."},
+			{"..dd", ".dlm", "dhlm", "mmd."},
+	};
+
+	static void oreBlock(String path, int color, boolean deep, long seed) throws Exception {
+		Random rnd = new Random(seed);
+		char[][] px = new char[16][16];
+		int[][] spots = {{1, 1}, {9, 1}, {5, 6}, {0, 10}, {9, 10}};
+		for (int[] s : spots) {
+			String[] stamp = ORE_STAMPS[rnd.nextInt(ORE_STAMPS.length)];
+			boolean flip = rnd.nextBoolean();
+			int ox = s[0] + rnd.nextInt(2), oy = s[1] + rnd.nextInt(2);
+			for (int sy = 0; sy < stamp.length; sy++) for (int sx = 0; sx < stamp[sy].length(); sx++) {
+				char c = stamp[sy].charAt(flip ? stamp[sy].length() - 1 - sx : sx);
+				int x = ox + sx, y = oy + sy;
+				if (c != '.' && x < 16 && y < 16) px[y][x] = c;
+			}
+		}
+		// Light metals (tin) are pulled down a little so the ore still stands out against grey stone.
+		int lum = (((color >> 16) & 255) + ((color >> 8) & 255) + (color & 255)) / 3;
+		double shift = lum > 170 ? -0.25 : 0;
+		png(path, (x, y, r) -> {
+			double t;
+			switch (px[y][x]) {
+				case 'h' -> t = 0.55;
+				case 'l' -> t = 0.25;
+				case 'm' -> t = 0.0;
+				case 'd' -> t = -0.4;
+				default -> { return baseStone(x, y, r, deep); }
+			}
+			return tone(color, t + shift);
+		});
+	}
+
+	/** Raw ore in the vanilla style: a lumpy two-lobed rock lit from the top-left, with a dark outline. */
+	static void rawLump(String path, int color) throws Exception {
+		double[][] blobs = {{6.5, 6.0, 6.0, 4.4}, {11.0, 10.0, 3.6, 3.2}, {4.0, 9.5, 3.4, 2.6}}; // cx, cy, rx, ry
+		double[][] t = new double[16][16];
+		boolean[][] in = new boolean[16][16];
+		for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+			double best = -1;
+			for (double[] b : blobs) {
+				double dx = (x + 0.5 - b[0]) / b[2], dy = (y + 0.5 - b[1]) / b[3];
+				double d = dx * dx + dy * dy;
+				if (d <= 1) {
+					double light = -(dx * 0.5 + dy * 0.85);       // lit from the top-left
+					double edge = d > 0.65 ? -0.25 : 0;              // darker toward the rim
+					double val = light * 0.6 + edge + 0.05;
+					if (val > best || !in[y][x]) best = Math.max(best, val);
+					in[y][x] = true;
+				}
+			}
+			t[y][x] = best;
+		}
+		png(path, (x, y, r) -> {
+			if (in[y][x]) {
+				double v = t[y][x] + (hash(x, y, 5) - 0.5) * 0.25; // a little grain
+				return tone(color, band(Math.max(-0.7, Math.min(0.75, v))));
+			}
+			for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+				int nx = x + d[0], ny = y + d[1];
+				if (nx >= 0 && ny >= 0 && nx < 16 && ny < 16 && in[ny][nx]) return tone(mul(color, 0.55), -0.6);
+			}
+			return 0;
+		});
 	}
 
 	static void ores() throws Exception {
 		for (Metal m : METALS) {
 			String n = m.name();
-			boolean[][] mask = oreMask(n.hashCode());
 			for (boolean deep : new boolean[]{false, true}) {
 				String block = (deep ? "deepslate_" : "") + n + "_ore";
-				png("block/" + block, (x, y, r) -> {
-					if (mask[y][x]) {
-						boolean top = y == 0 || !mask[y - 1][x];
-						return shade(m.color(), top ? 25 : (x < 15 && !mask[y][x + 1] ? -30 : 0));
-					}
-					return baseStone(x, y, r, deep);
-				});
+				oreBlock("block/" + block, m.color(), deep, n.hashCode());
 				cubeAll(block);
 			}
 			// Storage block: riveted plates in the metal colour
 			png("block/" + n + "_block", (x, y, r) -> casing(x, y, r, m.color(), shade(m.color(), 40)));
 			cubeAll(n + "_block");
 			// Raw ore lump, ingot, dust
-			png("item/raw_" + n, (x, y, r) -> {
-				double dx = (x - 7.5) / 6.0, dy = (y - 8.5) / 5.5;
-				double d = dx * dx + dy * dy + Math.sin(x * 1.7 + y) * 0.12;
-				if (d > 1) return 0;
-				return shade(m.color(), (d > 0.75 ? -45 : 0) + (y < 7 ? 15 : 0) + r.nextInt(25) - 18);
-			});
+			rawLump("item/raw_" + n, m.color());
 			ingot("item/" + n + "_ingot", m.color());
 			dust("item/" + n + "_dust", m.color());
 			for (String item : List.of("raw_" + n, n + "_ingot", n + "_dust")) {
@@ -490,49 +558,38 @@ public class GenAssets {
 	}
 
 	/**
-	 * Ingot in the vanilla style: a bar lying diagonally (low-left to high-right), seen from above.
-	 * Built from three faces of a prism: a bright top face, a front face and a short left end,
-	 * then outlined. Shading is a multiplier on the metal colour, so every metal reads the same way.
+	 * Ingot in the vanilla style: a chunky bar tilted up to the right, seen from above, with a bright
+	 * top face, a ridge highlight where it meets the darker front face, a shaded left end and an outline.
+	 * Drawn by hand as a template; each letter is a tone so every metal gets the same shading.
+	 *   L light outline   D dark outline (lower-right)   H ridge highlight   T top face   l top face, shaded
+	 *   E lit end face (right)   e shaded end face (left)   F front face   f front face, lighter
 	 */
+	static final String[] INGOT = {
+			"................",
+			"................",
+			"..........LL....",
+			".......LLLllL...",
+			"....LLLTTTTTTL..",
+			".LLLlTTTTTTTTlD.",
+			"LHTTTTTTTTTTHHTD",
+			"LlHTTTTTTHHHTFED",
+			"LlTHTTHHHTfFFFED",
+			"LlTlHHTfFFFFfEED",
+			"LeTlTfFFFFfEEDD.",
+			".LelTfFFffDDD...",
+			"..LelffDDD......",
+			"...LLDD.........",
+			"................",
+			"................",
+	};
+
 	static void ingot(String path, int color) throws Exception {
-		// Top face corners (A back-left, B back-right, C front-right, D front-left); front/end faces drop by `h`.
-		double[][] top = {{0.5, 7.0}, {9.5, 2.5}, {15.0, 5.5}, {6.0, 10.0}};
-		double h = 3.0;
-		double[][] front = {top[3], top[2], {top[2][0], top[2][1] + h}, {top[3][0], top[3][1] + h}};
-		double[][] end = {top[0], top[3], {top[3][0], top[3][1] + h}, {top[0][0], top[0][1] + h}};
-		int[][] face = new int[16][16]; // 0 empty, 1 top, 2 front, 3 end
-		for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
-			double px = x + 0.5, py = y + 0.5;
-			if (inPoly(px, py, top)) face[y][x] = 1;
-			else if (inPoly(px, py, front)) face[y][x] = 2;
-			else if (inPoly(px, py, end)) face[y][x] = 3;
-		}
+		Map<Character, Double> tones = Map.of(
+				'H', 0.45, 'T', 0.2, 'l', 0.05, 'E', 0.05, 'e', -0.2,
+				'f', -0.2, 'F', -0.32, 'L', -0.5, 'D', -0.85);
 		png(path, (x, y, r) -> {
-			int f = face[y][x];
-			if (f == 0) {
-				// 1px outline around the silhouette: lighter on the upper-left, darkest on the lower-right
-				boolean nearUpLeft = (x + 1 < 16 && face[y][x + 1] != 0) || (y + 1 < 16 && face[y + 1][x] != 0);
-				boolean nearDownRight = (x > 0 && face[y][x - 1] != 0) || (y > 0 && face[y - 1][x] != 0);
-				if (nearUpLeft) return mul(color, 0.62);
-				if (nearDownRight) return mul(color, 0.45);
-				return 0;
-			}
-			if (f == 1) {
-				// Top face: bright, with a highlight band along the back edge and near the right end
-				boolean backEdge = y == 0 || face[y - 1][x] == 0;
-				boolean rightEnd = x >= 12 && x + 1 < 16 && face[y][x + 1] == 0;
-				if (backEdge || rightEnd) return mul(color, 1.32);
-				double d = distToLine(x + 0.5, y + 0.5, top[0], top[1]);
-				return mul(color, d < 1.8 ? 1.22 : 1.1);
-			}
-			if (f == 2) {
-				// Front face: mid-tone, darkening toward the bottom edge
-				boolean bottom = y + 1 >= 16 || face[y + 1][x] == 0;
-				boolean upper = y > 0 && face[y - 1][x] == 1;
-				return mul(color, upper ? 0.95 : bottom ? 0.66 : 0.8);
-			}
-			// Left end: shadowed
-			return mul(color, 0.72);
+			char c = INGOT[y].charAt(x);
+			return c == '.' ? 0 : tone(color, tones.get(c));
 		});
 	}
 
@@ -614,10 +671,11 @@ public class GenAssets {
 				return casing(x, y, r);
 			});
 		}
+		// Battery Box: an empty meter window; the live charge level is a gauge model drawn over it.
 		png("block/battery_box_front", (x, y, r) -> {
 			if (inRect(x, y, 5, 3, 10, 12)) {
 				if (x == 5 || x == 10 || y == 3 || y == 12) return rgb(40, 40, 44);
-				return y >= 7 ? rgb(70, 200, 90) : rgb(30, 60, 36);
+				return rgb(24, 40, 28);
 			}
 			return casing(x, y, r);
 		});
@@ -660,14 +718,27 @@ public class GenAssets {
 		});
 	}
 
+	/**
+	 * Dust in the vanilla style: a pointed heap (narrow peak, wide middle, rounded base) of speckled
+	 * grains in four tones, outlined lighter on the upper-left and darker on the lower-right.
+	 */
 	static void dust(String path, int color) throws Exception {
+		// Heap silhouette, rows 3..13 as {left x, right x}: a small peak, three broad rows, a rounded base.
+		int[][] rows = {{7, 8}, {6, 9}, {5, 10}, {4, 11}, {3, 12}, {2, 13}, {2, 13}, {2, 13}, {3, 12}, {4, 11}, {6, 9}};
+		boolean[][] in = new boolean[16][16];
+		for (int i = 0; i < rows.length; i++) for (int x = rows[i][0]; x <= rows[i][1]; x++) in[3 + i][x] = true;
+		long seed = path.hashCode();
 		png(path, (x, y, r) -> {
-			// mound shape: a half ellipse sitting on the bottom
-			double dx = (x - 7.5) / 6.5, dy = (y - 14.0) / 8.0;
-			if (y > 14 || dx * dx + dy * dy > 1) return 0;
-			int d = (int) (-dy * 18) + r.nextInt(31) - 15;
-			if (dx * dx + dy * dy > 0.8) d -= 40;
-			return shade(color, d);
+			if (!in[y][x]) return 0;
+			// The heap's own edge pixels form the outline: lighter up-left, darker down-right.
+			boolean edgeUpLeft = !in[y - 1][x] || !in[y][x - 1];
+			boolean edgeDownRight = !in[y + 1][x] || !in[y][x + 1];
+			if (edgeDownRight && (x >= 8 || y >= 11)) return tone(color, -0.7);
+			if (edgeUpLeft || edgeDownRight) return tone(color, -0.55);
+			// Grains in four tones; darker grains gather toward the lower-right.
+			double h = hash(x, y, seed) - (x + y > 18 ? 0.15 : 0);
+			double t = h > 0.72 ? 0.35 : h > 0.42 ? 0.15 : h > 0.18 ? 0.0 : -0.3;
+			return tone(color, t);
 		});
 	}
 
@@ -854,8 +925,77 @@ public class GenAssets {
 					"{ \"parent\": \"minecraft:block/orientable\", \"textures\": { \"front\": \"voltworks:block/" + name + "_front" + suffix
 							+ "\", \"side\": \"" + side + "\", \"top\": \"" + top + "\" } }");
 		}
-		facingStates(name, lit -> lit && hasOnTexture ? name + "_on" : name, true);
+		// Energy gauge on the front: the Battery Box's big meter, a slim gauge on other machines.
+		// The Thermal Generator stores nothing, so it has none.
+		String gauge = name.equals("battery_box") ? "battery_gauge" : name.equals("thermal_generator") ? null : "gauge";
+		if (gauge == null) {
+			facingStates(name, lit -> lit && hasOnTexture ? name + "_on" : name, true);
+		} else {
+			gaugeStates(name, lit -> lit && hasOnTexture ? name + "_on" : name, gauge);
+		}
 		itemDef(name, "voltworks:block/" + name);
+	}
+
+	/** Multipart blockstate: the machine model per facing/lit, plus the gauge model for the current charge level. */
+	static void gaugeStates(String name, LitModel model, String gauge) throws Exception {
+		List<String> parts = new ArrayList<>();
+		for (int i = 0; i < 4; i++) {
+			String rot = ROT[i] != 0 ? ", \"y\": " + ROT[i] : "";
+			for (boolean lit : new boolean[]{false, true}) {
+				parts.add("  { \"when\": { \"facing\": " + q(FACINGS[i]) + ", \"lit\": " + q(String.valueOf(lit)) + " }, \"apply\": { \"model\": "
+						+ q("voltworks:block/" + model.name(lit)) + rot + " } }");
+			}
+			for (int c = 0; c <= GAUGE_LEVELS; c++) {
+				parts.add("  { \"when\": { \"facing\": " + q(FACINGS[i]) + ", \"charge\": " + q(String.valueOf(c)) + " }, \"apply\": { \"model\": "
+						+ q("voltworks:block/" + gauge + "_" + c) + rot + " } }");
+			}
+		}
+		write("assets/voltworks/blockstates/" + name + ".json", "{ \"multipart\": [\n" + String.join(",\n", parts) + "\n] }");
+	}
+
+	static final int GAUGE_LEVELS = 6;
+
+	/**
+	 * Gauge models and textures, one per charge level. The gauge is a thin raised panel on the machine's
+	 * front (north) face; its glass shows the fill level, its rim uses a dark frame texture.
+	 */
+	static void gauges() throws Exception {
+		png("block/gauge_frame", (x, y, r) -> rgb(34, 36, 42));
+		for (int c = 0; c <= GAUGE_LEVELS; c++) {
+			int level = c;
+			// Slim machine gauge: 2x10 glass, fills from the bottom in blue
+			int filled = Math.round(level * 10f / GAUGE_LEVELS);
+			png("block/gauge_" + c, (x, y, r) -> {
+				if (x > 1 || y > 9) return rgb(34, 36, 42);
+				boolean full = y >= 10 - filled;
+				if (!full) return rgb(22, 26, 34);
+				boolean topOfFill = y == 10 - filled;
+				return topOfFill ? rgb(150, 230, 255) : (x == 0 ? rgb(90, 200, 255) : rgb(50, 150, 230));
+			});
+			gaugeModel("gauge_" + c, new double[]{13, 3, -0.4, 15, 13, 0}, 2, 10);
+			// Battery Box meter: 4x8 glass, fills from the bottom in green
+			int bFilled = Math.round(level * 8f / GAUGE_LEVELS);
+			png("block/battery_gauge_" + c, (x, y, r) -> {
+				if (x > 3 || y > 7) return rgb(34, 36, 42);
+				if (y < 8 - bFilled) return rgb(24, 40, 28);
+				boolean topOfFill = y == 8 - bFilled;
+				return topOfFill ? rgb(170, 255, 170) : (x == 0 ? rgb(110, 230, 120) : rgb(60, 190, 80));
+			});
+			gaugeModel("battery_gauge_" + c, new double[]{6, 4, -0.4, 10, 12, 0}, 4, 8);
+		}
+	}
+
+	static void gaugeModel(String name, double[] box, int w, int h) throws Exception {
+		String from = "[" + box[0] + ", " + box[1] + ", " + box[2] + "]", to = "[" + box[3] + ", " + box[4] + ", " + box[5] + "]";
+		write("assets/voltworks/models/block/" + name + ".json", """
+			{ "textures": { "glass": "voltworks:block/%s", "frame": "voltworks:block/gauge_frame", "particle": "voltworks:block/gauge_frame" },
+			  "elements": [ { "from": %s, "to": %s, "faces": {
+			    "north": { "uv": [0, 0, %d, %d], "texture": "#glass" },
+			    "east":  { "uv": [0, 0, 1, 1], "texture": "#frame" },
+			    "west":  { "uv": [0, 0, 1, 1], "texture": "#frame" },
+			    "up":    { "uv": [0, 0, 1, 1], "texture": "#frame" },
+			    "down":  { "uv": [0, 0, 1, 1], "texture": "#frame" } } } ] }
+			""".formatted(name, from, to, w, h));
 	}
 
 	static void facingStates(String name, LitModel model, boolean rotate) throws Exception {
@@ -878,7 +1018,7 @@ public class GenAssets {
 	// ---------------- data: loot, tags, recipes ----------------
 	static final Set<String> TIER2 = Set.of("industrial_crusher", "induction_furnace", "thermal_generator", "reactor_chamber");
 	static final List<String> BLOCKS = List.of("generator", "crusher", "electric_furnace", "battery_box", "solar_panel", "copper_cable", "machine_frame",
-			"advanced_machine_frame", "alloy_smelter", "industrial_crusher", "induction_furnace", "thermal_generator", "charger", "reactor_chamber");
+			"advanced_machine_frame", "alloy_smelter", "industrial_crusher", "induction_furnace", "thermal_generator", "charger", "reactor_chamber", "item_pipe");
 
 	static void data() throws Exception {
 		for (String b : BLOCKS) {
@@ -943,5 +1083,158 @@ public class GenAssets {
 		write("data/voltworks/recipe/" + result + ".json",
 				"{ \"type\": \"minecraft:crafting_shaped\",\n  \"pattern\": [" + String.join(", ", p) + "],\n  \"key\": { "
 						+ String.join(", ", k) + " },\n  \"result\": { \"id\": \"voltworks:" + result + "\", \"count\": " + count + " } }");
+	}
+
+	// ---------------- logistics: item pipe, wrench, guide ----------------
+	static void logistics() throws Exception {
+		// Item pipe: tin-grey tube with a glass stripe; extracting arms get a hazard-striped collar.
+		png("block/item_pipe", (x, y, r) -> {
+			int base = rgb(150, 156, 166);
+			if (y == 7 || y == 8) return rgb(150 + r.nextInt(20), 205, 225);   // glass stripe
+			if (y == 6 || y == 9) return shade(base, -45);
+			if (x % 5 == 0) return shade(base, 25);                             // band joints
+			return shade(base, r.nextInt(11) - 5);
+		});
+		png("block/item_pipe_extract", (x, y, r) -> ((x + y) / 2 % 2 == 0) ? rgb(235, 190, 40) : rgb(30, 30, 34));
+		String tex = "\"textures\": { \"pipe\": \"voltworks:block/item_pipe\", \"collar\": \"voltworks:block/item_pipe_extract\", \"particle\": \"voltworks:block/item_pipe\" }";
+		write("assets/voltworks/models/block/item_pipe_core.json", """
+			{ "ambientocclusion": false, %s,
+			  "elements": [ { "from": [5,5,5], "to": [11,11,11], "faces": {
+			    "north": {"uv":[5,5,11,11],"texture":"#pipe"}, "south": {"uv":[5,5,11,11],"texture":"#pipe"},
+			    "east": {"uv":[5,5,11,11],"texture":"#pipe"}, "west": {"uv":[5,5,11,11],"texture":"#pipe"},
+			    "up": {"uv":[5,5,11,11],"texture":"#pipe"}, "down": {"uv":[5,5,11,11],"texture":"#pipe"} } } ] }
+			""".formatted(tex));
+		write("assets/voltworks/models/block/item_pipe_side.json", """
+			{ "ambientocclusion": false, %s,
+			  "elements": [ { "from": [5,5,0], "to": [11,11,5], "faces": {
+			    "north": {"uv":[5,5,11,11],"texture":"#pipe"},
+			    "east": {"uv":[0,5,5,11],"texture":"#pipe"}, "west": {"uv":[0,5,5,11],"texture":"#pipe"},
+			    "up": {"uv":[5,0,11,5],"texture":"#pipe", "rotation": 90}, "down": {"uv":[5,0,11,5],"texture":"#pipe", "rotation": 90} } } ] }
+			""".formatted(tex));
+		// Collar sits at the far end of an extracting arm, slightly wider than the pipe.
+		write("assets/voltworks/models/block/item_pipe_extract.json", """
+			{ "ambientocclusion": false, %s,
+			  "elements": [ { "from": [4,4,0], "to": [12,12,2], "faces": {
+			    "north": {"uv":[4,4,12,12],"texture":"#collar"}, "south": {"uv":[4,4,12,12],"texture":"#collar"},
+			    "east": {"uv":[0,4,2,12],"texture":"#collar"}, "west": {"uv":[0,4,2,12],"texture":"#collar"},
+			    "up": {"uv":[4,0,12,2],"texture":"#collar"}, "down": {"uv":[4,0,12,2],"texture":"#collar"} } } ] }
+			""".formatted(tex));
+		write("assets/voltworks/models/block/item_pipe_inventory.json", """
+			{ "parent": "minecraft:block/block", %s,
+			  "elements": [
+			    { "from": [0,5,5], "to": [16,11,11], "faces": {
+			      "north": {"uv":[0,5,16,11],"texture":"#pipe"}, "south": {"uv":[0,5,16,11],"texture":"#pipe"},
+			      "up": {"uv":[0,5,16,11],"texture":"#pipe"}, "down": {"uv":[0,5,16,11],"texture":"#pipe"},
+			      "east": {"uv":[5,5,11,11],"texture":"#pipe"}, "west": {"uv":[5,5,11,11],"texture":"#pipe"} } },
+			    { "from": [0,4,4], "to": [2,12,12], "faces": {
+			      "north": {"uv":[0,4,2,12],"texture":"#collar"}, "south": {"uv":[0,4,2,12],"texture":"#collar"},
+			      "up": {"uv":[0,4,2,12],"texture":"#collar"}, "down": {"uv":[0,4,2,12],"texture":"#collar"},
+			      "east": {"uv":[4,4,12,12],"texture":"#collar"}, "west": {"uv":[4,4,12,12],"texture":"#collar"} } } ] }
+			""".formatted(tex));
+		String[][] dirs = {{"north", ""}, {"east", ", \"y\": 90"}, {"south", ", \"y\": 180"}, {"west", ", \"y\": 270"},
+				{"up", ", \"x\": 270"}, {"down", ", \"x\": 90"}};
+		List<String> parts = new ArrayList<>();
+		parts.add("{ \"apply\": { \"model\": \"voltworks:block/item_pipe_core\" } }");
+		for (String[] d : dirs) {
+			parts.add("{ \"when\": { " + q(d[0]) + ": \"connected|extract\" }, \"apply\": { \"model\": \"voltworks:block/item_pipe_side\"" + d[1] + " } }");
+			parts.add("{ \"when\": { " + q(d[0]) + ": \"extract\" }, \"apply\": { \"model\": \"voltworks:block/item_pipe_extract\"" + d[1] + " } }");
+		}
+		write("assets/voltworks/blockstates/item_pipe.json", "{ \"multipart\": [\n  " + String.join(",\n  ", parts) + "\n] }");
+		itemDef("item_pipe", "voltworks:block/item_pipe_inventory");
+		shaped("item_pipe", 8, new String[]{"TGT"}, "T", "voltworks:tin_ingot", "G", "minecraft:glass");
+
+		// Wrench: open-ended spanner, steel head with a slot, red grip
+		boolean[][] mask = new boolean[16][16];
+		int[][] col = new int[16][16];
+		for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+			double px = x + 0.5, py = y + 0.5;
+			double hx = px - 11.2, hy = py - 4.8;                      // head centre
+			boolean head = Math.hypot(hx, hy) < 3.6;
+			double along = (hx - hy) / Math.sqrt(2), across = (hx + hy) / Math.sqrt(2);
+			boolean slot = along > -0.6 && Math.abs(across) < 1.25;     // slot opens toward the upper right
+			double t = Math.max(0, Math.min(1, ((px - 3) * 6.5 + (py - 13) * -6.5) / (2 * 6.5 * 6.5)));
+			boolean shaft = Math.hypot(px - (3 + 6.5 * t), py - (13 - 6.5 * t)) < 1.35;
+			if ((head && !slot) || shaft) {
+				mask[y][x] = true;
+				boolean grip = shaft && !head && px + (16 - py) < 10.5;
+				col[y][x] = grip ? shade(rgb(190, 60, 45), (x + y) % 2 == 0 ? 10 : -10) : shade(rgb(185, 190, 200), x - y > 4 ? 20 : -5);
+			}
+		}
+		outlined("item/wrench", mask, col);
+		write("assets/voltworks/models/item/wrench.json",
+				"{ \"parent\": \"minecraft:item/handheld\", \"textures\": { \"layer0\": \"voltworks:item/wrench\" } }");
+		itemDef("wrench", "voltworks:item/wrench");
+		shaped("wrench", 1, new String[]{"I I", " T ", " I "}, "I", "minecraft:iron_ingot", "T", "voltworks:tin_ingot");
+
+		// Guide: blue book with a copper lightning bolt on the cover
+		png("item/guide", (x, y, r) -> {
+			if (x < 3 || x > 13 || y < 1 || y > 14) return 0;
+			if (x == 3 || x == 13 || y == 1 || y == 14) return rgb(24, 28, 44);
+			if (x == 12) return y % 2 == 0 ? rgb(235, 228, 205) : rgb(205, 198, 175);       // page edges
+			if (x <= 5) return rgb(40, 52, 96);                                             // spine
+			boolean bolt = (y >= 3 && y <= 7 && (x == 10 - (y - 3) / 2 || x == 11 - (y - 3) / 2))
+					|| (y == 8 && x >= 7 && x <= 10) || (y >= 9 && y <= 12 && (x == 9 - (y - 9) / 2 || x == 10 - (y - 9) / 2));
+			if (bolt) return rgb(240, 150, 70);
+			return shade(rgb(58, 76, 140), r.nextInt(9) - 4);
+		});
+		write("assets/voltworks/models/item/guide.json",
+				"{ \"parent\": \"minecraft:item/generated\", \"textures\": { \"layer0\": \"voltworks:item/guide\" } }");
+		itemDef("guide", "voltworks:item/guide");
+		write("data/voltworks/recipe/guide.json", """
+			{ "type": "minecraft:crafting_shapeless",
+			  "ingredients": [ "minecraft:book", "minecraft:copper_ingot" ],
+			  "result": { "id": "voltworks:guide", "count": 1 } }
+			""");
+
+		// Translations for the logistics items, merged into the language file written by models()
+		Map<String, String> lang = new LinkedHashMap<>();
+		lang.put("block.voltworks.item_pipe", "Item Pipe");
+		lang.put("item.voltworks.wrench", "Wrench");
+		lang.put("item.voltworks.guide", "Voltworks Guide");
+		lang.put("message.voltworks.wrench.rotate", "Wrench: Rotate mode");
+		lang.put("message.voltworks.wrench.configure", "Wrench: Configure mode");
+		lang.put("message.voltworks.wrench.cant_pick_up", "Only Voltworks blocks can be picked up with the wrench");
+		lang.put("message.voltworks.wrench.cant_rotate", "This block can't be rotated");
+		lang.put("message.voltworks.wrench.not_configurable", "This block has no configurable sides");
+		lang.put("message.voltworks.wrench.side", "%s side: %s");
+		lang.put("message.voltworks.pipe.nothing", "Nothing to connect to on that side");
+		lang.put("message.voltworks.pipe.connected", "Pipe side: connected");
+		lang.put("message.voltworks.pipe.extract", "Pipe side: extracting");
+		lang.put("message.voltworks.pipe.disabled", "Pipe side: disabled");
+		lang.put("message.voltworks.pipe.none", "Pipe side: not connected");
+		lang.put("tooltip.voltworks.wrench.rotate", "Mode: Rotate");
+		lang.put("tooltip.voltworks.wrench.configure", "Mode: Configure sides");
+		lang.put("tooltip.voltworks.wrench.hint1", "Right-click the air to switch mode; right-click a pipe arm to cycle it");
+		lang.put("tooltip.voltworks.wrench.hint2", "Sneak + right-click a Voltworks block to pick it up");
+		for (String m : List.of("none", "input", "output", "both")) lang.put("side_mode.voltworks." + m, Character.toUpperCase(m.charAt(0)) + m.substring(1));
+		for (String sd : List.of("front", "back", "left", "right", "top", "bottom")) lang.put("side.voltworks." + sd, Character.toUpperCase(sd.charAt(0)) + sd.substring(1));
+
+		// Guide pages: tools/guide.txt, pages separated by a line containing only "---"
+		Path guide = res.toAbsolutePath().getParent().getParent().getParent().resolve("tools/guide.txt");
+		String[] pages = Files.readString(guide).replace("\r\n", "\n").strip().split("\n---\n");
+		for (int i = 0; i < pages.length; i++) lang.put("guide.voltworks.page." + (i + 1), pages[i].strip());
+
+		Path langFile = res.resolve("assets/voltworks/lang/en_us.json");
+		String json = Files.readString(langFile).stripTrailing();
+		StringBuilder sb = new StringBuilder(json.substring(0, json.lastIndexOf('}')).stripTrailing());
+		for (var e : lang.entrySet()) sb.append(",\n  ").append(jsonString(e.getKey())).append(": ").append(jsonString(e.getValue()));
+		sb.append("\n}\n");
+		Files.writeString(langFile, sb.toString());
+	}
+
+	static String jsonString(String s) {
+		return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
+	}
+
+	/** Paints a sprite from a mask and colours, adding a dark 1px outline around it. */
+	static void outlined(String path, boolean[][] mask, int[][] col) throws Exception {
+		png(path, (x, y, r) -> {
+			if (mask[y][x]) return col[y][x];
+			for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+				int nx = x + d[0], ny = y + d[1];
+				if (nx >= 0 && ny >= 0 && nx < 16 && ny < 16 && mask[ny][nx]) return rgb(28, 28, 32);
+			}
+			return 0;
+		});
 	}
 }

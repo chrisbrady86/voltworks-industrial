@@ -1,0 +1,7 @@
+{ "textures": { "glass": "voltworks:block/battery_gauge_4", "frame": "voltworks:block/gauge_frame", "particle": "voltworks:block/gauge_frame" },
+  "elements": [ { "from": [6.0, 4.0, -0.4], "to": [10.0, 12.0, 0.0], "faces": {
+    "north": { "uv": [0, 0, 4, 8], "texture": "#glass" },
+    "east":  { "uv": [0, 0, 1, 1], "texture": "#frame" },
+    "west":  { "uv": [0, 0, 1, 1], "texture": "#frame" },
+    "up":    { "uv": [0, 0, 1, 1], "texture": "#frame" },
+    "down":  { "uv": [0, 0, 1, 1], "texture": "#frame" } } } ] }

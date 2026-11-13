@@ -2,6 +2,7 @@ package dev.voltworks.registry;
 
 import dev.voltworks.Voltworks;
 import dev.voltworks.block.CableBlock;
+import dev.voltworks.block.ItemPipeBlock;
 import dev.voltworks.block.MachineBlock;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -19,6 +20,8 @@ import net.minecraft.world.level.material.MapColor;
 
 public final class ModBlocks {
 	public static final Block MACHINE_FRAME = register("machine_frame", Block::new, metal());
+	public static final Block ITEM_PIPE = register("item_pipe", ItemPipeBlock::new,
+			BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(0.5F).sound(SoundType.COPPER).noOcclusion());
 	public static final Block COPPER_CABLE = register("copper_cable", CableBlock::new,
 			BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).strength(0.4F).sound(SoundType.COPPER).noOcclusion());
 	public static final Block GENERATOR = machine("generator", () -> ModBlockEntities.GENERATOR,

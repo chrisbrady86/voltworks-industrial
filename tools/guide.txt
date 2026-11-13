@@ -1,0 +1,78 @@
+Voltworks Guide
+
+Power, cables and machines, from your first generator to a nuclear reactor.
+
+---
+Power
+
+Generator: burns furnace fuel, 10 J/t.
+
+Solar Panel: 1 J/t in daylight under open sky.
+
+Thermal Generator: 5 J/t per lava source touching it.
+---
+Cables & Batteries
+
+Copper Cable carries power between blocks.
+
+Power goes to machines first, then to Battery Boxes (100,000 J each). The front gauge shows the charge.
+---
+Machines
+
+Crusher: ore into 2 dust.
+Electric Furnace: smelts with power.
+Alloy Smelter: iron + 2 coal into steel.
+
+Steel makes Circuits and the Advanced Machine Frame.
+---
+Tier 2
+
+Industrial Crusher: 3 dust per ore, 4x speed.
+
+Induction Furnace: two lanes, 4x speed.
+
+Upgrades (3 slots): Speed, Capacity, Ejector.
+---
+Item Pipes
+
+Pipes join chests, hoppers and machines.
+
+A pipe touching a machine output starts in Extract mode (striped collar) and pulls items out every half second.
+---
+Item Pipes
+
+Items go to the nearest inventory on the network that accepts them, taking turns.
+
+Wrench a pipe arm to cycle it: connected, extract, disabled.
+---
+Wrench
+
+Right-click the air to switch Rotate / Configure.
+
+Rotate: turn machines to face the side you click.
+
+Sneak + right-click to pick up a Voltworks block.
+---
+Side Config
+
+In Configure mode, right-click a machine side to cycle it:
+
+None, Input, Output, Both.
+
+Settings follow the machine when you rotate it.
+---
+Tools
+
+Electric Drill, Chainsaw and Advanced Drill run on energy.
+
+Recharge them in the Charger.
+
+Advanced Drill: sneak + right-click for 3x3 mining.
+---
+Reactor
+
+3x3 grid of Fuel Rods and Heat Vents. Needs redstone.
+
+Rods side by side make more power and much more heat.
+
+Keep heat below 100% or it melts down! A comparator reads heat.

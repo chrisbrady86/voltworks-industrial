@@ -3,9 +3,11 @@ package dev.voltworks.registry;
 import dev.voltworks.Voltworks;
 import dev.voltworks.item.AdvancedDrillItem;
 import dev.voltworks.item.FuelRodItem;
+import dev.voltworks.item.GuideBookItem;
 import dev.voltworks.item.TooltipItem;
 import dev.voltworks.item.PowerToolItem;
 import dev.voltworks.item.UpgradeItem;
+import dev.voltworks.item.WrenchItem;
 import java.util.function.Function;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -36,6 +38,8 @@ public final class ModItems {
 	public static final Item HEAT_VENT = register("heat_vent", p -> new TooltipItem(p.stacksTo(1), "tooltip.voltworks.heat_vent"));
 
 	// Power tools
+	public static final Item GUIDE = register("guide", GuideBookItem::new);
+	public static final Item WRENCH = register("wrench", WrenchItem::new);
 	public static final Item POWER_CELL = register("power_cell");
 
 	// Machine upgrades

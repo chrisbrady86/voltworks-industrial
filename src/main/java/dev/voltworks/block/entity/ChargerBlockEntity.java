@@ -55,18 +55,23 @@ public class ChargerBlockEntity extends PoweredContainerBlockEntity implements E
 	}
 
 	@Override
-	public int[] getSlotsForFace(Direction direction) {
+	protected SideConfig.Mode defaultSideMode(SideConfig.Side side) {
+		return SideConfig.Mode.BOTH;
+	}
+
+	@Override
+	protected int[] inputSlots() {
 		return SLOTS;
 	}
 
 	@Override
-	public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction direction) {
-		return canPlaceItem(slot, stack);
+	protected int[] outputSlots() {
+		return SLOTS;
 	}
 
 	@Override
-	public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction direction) {
-		// Hoppers only pull tools out once they're fully charged.
+	protected boolean allowExtract(int slot, ItemStack stack) {
+		// Hoppers and pipes only pull tools out once they're fully charged.
 		return stack.getItem() instanceof ChargeableItem item && item.isFull(stack);
 	}
 

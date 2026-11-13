@@ -41,10 +41,13 @@ public class Voltworks implements ModInitializer {
 				.title(Component.translatable("itemGroup.voltworks"))
 				.icon(() -> new ItemStack(ModBlocks.GENERATOR))
 				.displayItems((params, out) -> {
+					out.accept(ModItems.GUIDE);
 					out.accept(ModBlocks.GENERATOR);
 					out.accept(ModBlocks.SOLAR_PANEL);
 					out.accept(ModBlocks.BATTERY_BOX);
 					out.accept(ModBlocks.COPPER_CABLE);
+					out.accept(ModBlocks.ITEM_PIPE);
+					out.accept(ModItems.WRENCH);
 					out.accept(ModBlocks.CRUSHER);
 					out.accept(ModBlocks.ELECTRIC_FURNACE);
 					out.accept(ModBlocks.MACHINE_FRAME);

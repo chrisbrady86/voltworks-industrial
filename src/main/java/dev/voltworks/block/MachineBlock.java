@@ -1,5 +1,6 @@
 package dev.voltworks.block;
 
+import dev.voltworks.block.entity.EnergyGauge;
 import dev.voltworks.block.entity.ReactorBlockEntity;
 import dev.voltworks.block.entity.StatusReporter;
 import dev.voltworks.block.entity.VoltTicking;
@@ -27,6 +28,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
@@ -34,13 +36,17 @@ import org.jspecify.annotations.Nullable;
 public class MachineBlock extends BaseEntityBlock implements EnergyConnectable {
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty LIT = BlockStateProperties.LIT;
+	/** How full the machine's energy buffer is, shown by the gauge on its front (0 empty .. 6 full). */
+	public static final IntegerProperty CHARGE = IntegerProperty.create("charge", 0, EnergyGauge.MAX_LEVEL);
+	/** Only re-check the gauge every few ticks, so a buffer hovering at a boundary doesn't flicker. */
+	private static final int GAUGE_INTERVAL = 10;
 
 	private final Supplier<BlockEntityType<?>> type;
 
 	public MachineBlock(Supplier<BlockEntityType<?>> type, Properties properties) {
 		super(properties);
 		this.type = type;
-		this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(LIT, false));
+		this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(LIT, false).setValue(CHARGE, 0));
 	}
 
 	@Override
@@ -58,8 +64,25 @@ public class MachineBlock extends BaseEntityBlock implements EnergyConnectable {
 			if (be instanceof VoltTicking ticking) {
 				ticking.serverTick((ServerLevel) lvl, pos, st);
 			}
+			if (be instanceof EnergyGauge gauge && !be.isRemoved() && lvl.getGameTime() % GAUGE_INTERVAL == 0) {
+				BlockState current = lvl.getBlockState(pos);
+				int gaugeLevel = gauge.gaugeLevel();
+				if (current.getBlock() == this && current.getValue(CHARGE) != gaugeLevel) {
+					lvl.setBlock(pos, current.setValue(CHARGE, gaugeLevel), Block.UPDATE_CLIENTS);
+				}
+			}
 		};
 		return (BlockEntityTicker<T>) ticker;
+	}
+
+	/** Holding a wrench: skip opening the GUI so the wrench can rotate, configure or pick up the machine. */
+	@Override
+	protected InteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
+			net.minecraft.world.InteractionHand hand, BlockHitResult hit) {
+		if (stack.getItem() instanceof dev.voltworks.item.WrenchItem) {
+			return InteractionResult.PASS;
+		}
+		return super.useItemOn(stack, state, level, pos, player, hand, hit);
 	}
 
 	@Override
@@ -107,6 +130,6 @@ public class MachineBlock extends BaseEntityBlock implements EnergyConnectable {
 
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-		builder.add(FACING, LIT);
+		builder.add(FACING, LIT, CHARGE);
 	}
 }

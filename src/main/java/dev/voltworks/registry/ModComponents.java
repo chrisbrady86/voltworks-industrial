@@ -15,6 +15,10 @@ public final class ModComponents {
 	public static final DataComponentType<Boolean> WIDE_MODE = Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, Voltworks.id("wide_mode"),
 			DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
 
+	/** Wrench mode: false = rotate, true = configure sides. */
+	public static final DataComponentType<Boolean> CONFIG_MODE = Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, Voltworks.id("config_mode"),
+			DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
+
 	/** Remaining burn time of a reactor fuel rod, in ticks. */
 	public static final DataComponentType<Integer> FUEL = Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, Voltworks.id("fuel"),
 			DataComponentType.<Integer>builder().persistent(ExtraCodecs.NON_NEGATIVE_INT).networkSynchronized(ByteBufCodecs.VAR_INT).build());

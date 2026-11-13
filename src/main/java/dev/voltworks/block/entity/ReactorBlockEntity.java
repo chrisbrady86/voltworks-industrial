@@ -158,18 +158,28 @@ public class ReactorBlockEntity extends PoweredContainerBlockEntity implements S
 	}
 
 	@Override
-	public int[] getSlotsForFace(Direction direction) {
+	protected SideConfig.Mode defaultSideMode(SideConfig.Side side) {
+		return SideConfig.Mode.BOTH;
+	}
+
+	@Override
+	protected int[] inputSlots() {
 		return ALL_SLOTS;
 	}
 
 	@Override
-	public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction direction) {
-		return stack.is(ModItems.FUEL_ROD); // hoppers refuel; vents are placed by hand
+	protected int[] outputSlots() {
+		return ALL_SLOTS;
 	}
 
 	@Override
-	public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction direction) {
-		return stack.is(ModItems.DEPLETED_FUEL_ROD); // hoppers pull out spent rods
+	protected boolean allowInsert(int slot, ItemStack stack) {
+		return stack.is(ModItems.FUEL_ROD); // hoppers and pipes refuel; vents are placed by hand
+	}
+
+	@Override
+	protected boolean allowExtract(int slot, ItemStack stack) {
+		return stack.is(ModItems.DEPLETED_FUEL_ROD); // hoppers and pipes pull out spent rods
 	}
 
 	@Override

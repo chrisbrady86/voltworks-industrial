@@ -1,12 +1,15 @@
 package dev.voltworks.test;
 
 import dev.voltworks.Voltworks;
+import dev.voltworks.block.ItemPipeBlock;
 import dev.voltworks.block.MachineBlock;
 import dev.voltworks.block.entity.BatteryBlockEntity;
 import dev.voltworks.block.entity.PoweredContainerBlockEntity;
 import dev.voltworks.block.entity.ReactorBlockEntity;
+import dev.voltworks.block.entity.SideConfig;
 import dev.voltworks.item.FuelRodItem;
 import dev.voltworks.item.ChargeableItem;
+import dev.voltworks.item.WrenchItem;
 import dev.voltworks.registry.ModBlocks;
 import dev.voltworks.registry.ModComponents;
 import dev.voltworks.registry.ModItems;
@@ -53,6 +56,16 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			world.getServer().runOnServer(VoltworksClientGameTest::build);
 			context.waitTicks(RUN_TICKS);
 			context.takeScreenshot("voltworks-machines");
+			// Close-up of the front gauges on the Battery Box and the machines next to it
+			world.getServer().runOnServer(server -> command(server, String.format("tp @a %d %d %d 0 20",
+					origin(server).getX() + 10, origin(server).getY() + 1, origin(server).getZ() - 3)));
+			context.waitTicks(10);
+			context.takeScreenshot("voltworks-gauges");
+			// Item pipes, extract collars and the wrench-cut join
+			world.getServer().runOnServer(server -> command(server, String.format("tp @a %d %d %d 0 40",
+					logisticsOrigin(origin(server)).getX() + 2, origin(server).getY() + 3, origin(server).getZ() - 3)));
+			context.waitTicks(10);
+			context.takeScreenshot("voltworks-pipes");
 			List<String> failures = world.getServer().computeOnServer(VoltworksClientGameTest::check);
 			// Open the sped-up crusher's GUI (upgrade slots + output) and screenshot it
 			world.getServer().runOnServer(server -> {
@@ -189,6 +202,8 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		for (int i = 0; i < 9; i++) put(level, hot, i, ModItems.FUEL_ROD, 1);
 		level.setBlockAndUpdate(hot.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
 
+		buildLogistics(level, o);
+
 		// Camera: stand north of the rows, look south at them
 		command(server, "gamemode spectator @a");
 		command(server, String.format("tp @a %d %d %d 0 25", o.getX() + 6, o.getY() + 3, o.getZ() - 7));
@@ -212,6 +227,9 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (level.getBlockEntity(o.offset(12, 0, 0)) instanceof BatteryBlockEntity battery) {
 			System.out.println("[voltworks-test] Battery charge: " + battery.getEnergy());
 			if (battery.getEnergy() <= 0) fails.add("Battery Box should have stored surplus power");
+			int bars = level.getBlockState(o.offset(12, 0, 0)).getValue(MachineBlock.CHARGE);
+			System.out.println("[voltworks-test] Battery Box gauge: " + bars + "/6 bars");
+			if (bars != battery.gaugeLevel() || bars < 1) fails.add("Battery Box gauge should show its charge (shows " + bars + ")");
 		} else {
 			fails.add("Battery Box block entity missing");
 		}
@@ -228,13 +246,14 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		System.out.println("[voltworks-test] Electric Furnace capacity with 2 Capacity Upgrades: " + cap + " J");
 		if (cap != 1_000 + 2 * 4_000) fails.add("2 Capacity Upgrades should give 9000 J (got " + cap + ")");
 		checkReactors(fails, level, o);
+		checkLogistics(fails, level, server, o);
 
 		// Data-driven recipes must have parsed
 		for (String id : List.of("machine_frame", "copper_cable", "generator", "crusher", "electric_furnace", "battery_box", "solar_panel",
 				"alloy_smelter", "circuit", "advanced_machine_frame", "industrial_crusher", "induction_furnace", "thermal_generator",
 				"iron_ingot_from_smelting_dust", "gold_ingot_from_blasting_dust",
 				"tin_ingot_from_smelting_raw_tin", "lead_ingot_from_blasting_lead_dust", "tin_block", "lead_ingot_from_lead_block",
-				"steel_block")) {
+				"steel_block", "item_pipe", "wrench", "guide")) {
 			if (server.getRecipeManager().byKey(ResourceKey.create(Registries.RECIPE, Voltworks.id(id))).isEmpty()) {
 				fails.add("Recipe failed to load: voltworks:" + id);
 			}
@@ -299,6 +318,9 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			if (r.getHeat() != 0) fails.add("Safe reactor (3 vents) should stay at 0 heat (got " + r.getHeat() + ")");
 			if (fuel >= FuelRodItem.LIFETIME) fails.add("Safe reactor should have burned some fuel");
 			if (battery.getEnergy() <= 0) fails.add("Reactor should have charged the adjacent Battery Box");
+			int rbars = level.getBlockState(safe.west()).getValue(MachineBlock.CHARGE);
+			System.out.println("[voltworks-test] Reactor-fed Battery Box gauge: " + rbars + "/6 bars (" + battery.getEnergy() + " J)");
+			if (rbars != 2) fails.add("Battery with ~28,000 J should show 2 of 6 bars (shows " + rbars + ")");
 			if (r.getComparatorSignal() != 0) fails.add("Cold reactor comparator signal should be 0");
 		} else {
 			fails.add("Safe reactor is missing!");
@@ -316,6 +338,100 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		System.out.println("[voltworks-test] Overloaded reactor: melted down=" + gone + ", platform blocks destroyed=" + crater + "/81");
 		if (!gone) fails.add("9-rod reactor with no cooling should have melted down");
 		if (crater < 10) fails.add("Meltdown should blow a crater in the platform (only " + crater + " blocks)");
+	}
+
+	/*
+	 * Logistics, on its own platform west of the main layout (L = origin - 12x), all rows run west -> east:
+	 *   z=0:  CHEST(16 raw iron) pipe[extract west] pipe pipe CHEST           -> items cross the network
+	 *   z=3:  GEN cable CRUSHER(east side = Output) pipe CHEST               -> pipe defaults to extract, dust flows
+	 *   z=6:  CHEST(8 cobble) pipe[extract] pipe |cut| pipe CHEST             -> wrench-disabled join blocks the flow
+	 *   z=9:  GEN (rotated by wrench)   MACHINE FRAME (picked up by wrench)
+	 */
+	private static BlockPos logisticsOrigin(BlockPos o) {
+		return o.offset(-12, 0, 0);
+	}
+
+	private static void placePipe(ServerLevel level, BlockPos pos) {
+		level.setBlockAndUpdate(pos, Block.updateFromNeighbourShapes(ModBlocks.ITEM_PIPE.defaultBlockState(), level, pos));
+	}
+
+	private static void buildLogistics(ServerLevel level, BlockPos o) {
+		BlockPos l = logisticsOrigin(o);
+		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 10; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+
+		// Row 1: chest -> chest across three pipes, first arm switched to extract with the wrench
+		level.setBlockAndUpdate(l, Blocks.CHEST.defaultBlockState());
+		level.setBlockAndUpdate(l.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
+		for (int x = 1; x <= 3; x++) placePipe(level, l.offset(x, 0, 0));
+		put(level, l, 0, Items.RAW_IRON, 16);
+		WrenchItem.cyclePipe(level, l.offset(1, 0, 0), Direction.WEST); // connected -> extract
+
+		// Row 2: a powered crusher whose east side is configured as Output; the pipe placed there starts extracting
+		BlockPos crusher = l.offset(2, 0, 3);
+		place(level, l.offset(0, 0, 3), ModBlocks.GENERATOR);
+		place(level, l.offset(1, 0, 3), ModBlocks.COPPER_CABLE);
+		place(level, crusher, ModBlocks.CRUSHER);
+		put(level, l.offset(0, 0, 3), 0, Items.COAL, 4);
+		put(level, crusher, 0, Items.RAW_IRON, 2);
+		for (int i = 0; i < 4 && ((PoweredContainerBlockEntity) level.getBlockEntity(crusher)).getSideMode(Direction.EAST) != SideConfig.Mode.OUTPUT; i++) {
+			WrenchItem.configure(level, crusher, Direction.EAST);
+		}
+		level.setBlockAndUpdate(l.offset(4, 0, 3), Blocks.CHEST.defaultBlockState());
+		placePipe(level, l.offset(3, 0, 3));
+
+		// Row 3: same as row 1, but the join between the 2nd and 3rd pipe is cut with the wrench
+		BlockPos c = l.offset(0, 0, 6);
+		level.setBlockAndUpdate(c, Blocks.CHEST.defaultBlockState());
+		level.setBlockAndUpdate(c.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
+		for (int x = 1; x <= 3; x++) placePipe(level, c.offset(x, 0, 0));
+		put(level, c, 0, Items.COBBLESTONE, 8);
+		WrenchItem.cyclePipe(level, c.offset(1, 0, 0), Direction.WEST); // extract
+		WrenchItem.cyclePipe(level, c.offset(2, 0, 0), Direction.EAST); // pipe-to-pipe: connected -> disabled
+
+		// Row 4: wrench rotation and pick-up targets
+		place(level, l.offset(0, 0, 9), ModBlocks.GENERATOR);
+		place(level, l.offset(2, 0, 9), ModBlocks.MACHINE_FRAME);
+	}
+
+	private static void checkLogistics(List<String> fails, ServerLevel level, MinecraftServer server, BlockPos o) {
+		BlockPos l = logisticsOrigin(o);
+
+		// Row 1
+		if (ItemPipeBlock.get(level.getBlockState(l.offset(1, 0, 0)), Direction.WEST) != ItemPipeBlock.Side.EXTRACT) {
+			fails.add("Wrench should switch the pipe arm at the source chest to extract");
+		}
+		expect(fails, level, l.offset(4, 0, 0), 0, Items.RAW_IRON, 16, "Item Pipe: 16 raw iron moved chest -> chest");
+		if (!((Container) level.getBlockEntity(l)).isEmpty()) fails.add("Item Pipe should have emptied the source chest");
+
+		// Row 2
+		BlockPos crusher = l.offset(2, 0, 3);
+		SideConfig.Mode eastMode = ((PoweredContainerBlockEntity) level.getBlockEntity(crusher)).getSideMode(Direction.EAST);
+		if (eastMode != SideConfig.Mode.OUTPUT) fails.add("Wrench should set the crusher's east side to Output (is " + eastMode + ")");
+		ItemPipeBlock.Side pipeSide = ItemPipeBlock.get(level.getBlockState(l.offset(3, 0, 3)), Direction.WEST);
+		if (pipeSide != ItemPipeBlock.Side.EXTRACT) fails.add("A pipe placed on a machine's Output side should start extracting (is " + pipeSide + ")");
+		expect(fails, level, l.offset(4, 0, 3), 0, ModItems.IRON_DUST, 4, "Item Pipe: crusher output (4 iron dust) piped into a chest");
+		ItemStack crusherOut = ((Container) level.getBlockEntity(crusher)).getItem(1);
+		if (!crusherOut.isEmpty()) fails.add("Pipe should have emptied the crusher's output (left " + crusherOut + ")");
+
+		// Row 3
+		BlockPos c = l.offset(0, 0, 6);
+		if (ItemPipeBlock.get(level.getBlockState(c.offset(3, 0, 0)), Direction.WEST) != ItemPipeBlock.Side.DISABLED) {
+			fails.add("Disabling a pipe join should cut off both pipes");
+		}
+		if (!((Container) level.getBlockEntity(c.offset(4, 0, 0))).isEmpty()) fails.add("Items must not cross a disabled pipe join");
+		expect(fails, level, c, 0, Items.COBBLESTONE, 8, "Disabled join: source chest keeps its 8 cobblestone");
+
+		// Row 4: rotate and pick up
+		BlockPos gen = l.offset(0, 0, 9);
+		WrenchItem.rotate(level, gen, Direction.EAST);
+		Direction facing = level.getBlockState(gen).getValue(MachineBlock.FACING);
+		if (facing != Direction.EAST) fails.add("Wrench should turn the generator to face the clicked side (faces " + facing + ")");
+		ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+		BlockPos frame = l.offset(2, 0, 9);
+		boolean picked = WrenchItem.dismantle(level, frame, player);
+		if (!picked || !level.getBlockState(frame).isAir()) fails.add("Wrench should pick up the Machine Frame");
+		if (!player.getInventory().contains(new ItemStack(ModBlocks.MACHINE_FRAME.asItem()))) fails.add("Picked-up Machine Frame should be in the player's inventory");
+		if (WrenchItem.dismantle(level, l.offset(0, -1, 0), player)) fails.add("Wrench must not pick up vanilla blocks");
 	}
 
 	private static ItemStack full(Item item) {

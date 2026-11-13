@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["TGT"],
+  "key": { "T": "voltworks:tin_ingot", "G": "minecraft:glass" },
+  "result": { "id": "voltworks:item_pipe", "count": 8 } }

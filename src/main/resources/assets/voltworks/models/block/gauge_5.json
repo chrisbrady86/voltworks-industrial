@@ -1,0 +1,7 @@
+{ "textures": { "glass": "voltworks:block/gauge_5", "frame": "voltworks:block/gauge_frame", "particle": "voltworks:block/gauge_frame" },
+  "elements": [ { "from": [13.0, 3.0, -0.4], "to": [15.0, 13.0, 0.0], "faces": {
+    "north": { "uv": [0, 0, 2, 10], "texture": "#glass" },
+    "east":  { "uv": [0, 0, 1, 1], "texture": "#frame" },
+    "west":  { "uv": [0, 0, 1, 1], "texture": "#frame" },
+    "up":    { "uv": [0, 0, 1, 1], "texture": "#frame" },
+    "down":  { "uv": [0, 0, 1, 1], "texture": "#frame" } } } ] }

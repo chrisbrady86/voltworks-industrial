@@ -16,6 +16,12 @@ An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it t
 - Tier 2: **Industrial Crusher** (3 dust per ore, 4× speed), **Induction Furnace** (2 lanes, 4× speed).
 - **Upgrades** (3 slots per machine): Speed, Capacity, Ejector (auto-outputs into adjacent inventories/machines).
 
+**Logistics**
+- **Item Pipe** — links chests, hoppers and machines; extracting sides (striped collar) pull items and deliver them to the nearest inventory that accepts them. Pipes on a machine's Output side start extracting automatically.
+- **Wrench** — rotate blocks, set each machine side to None / Input / Output / Both, cycle pipe arms (connected / extract / disabled), and sneak + right-click to pick up Voltworks blocks.
+- **Voltworks Guide** — in-game book (book + copper ingot) explaining everything; pages live in `tools/guide.txt`.
+- Machines show their charge on a front gauge.
+
 **Tools** — Electric Drill, Chainsaw, Advanced Drill (sneak + right-click for 3×3 mining). Run on energy, recharge in the **Charger**.
 
 **Ores** — Tin, Lead, Uranium (with raw ores, dusts, ingots, storage blocks; `c:` convention tags).
@@ -34,7 +40,7 @@ To play: put `build/libs/voltworks-<version>.jar` and Fabric API in your `mods` 
 
 ## Automated test
 
-`src/gametest/.../VoltworksClientGameTest.java` launches the game, creates a normal world (fixed seed), builds every machine setup, runs 700 ticks, and checks the results: machine outputs, power flow, battery charging, ore generation, loot tables, tool tiers, 3×3 drilling, upgrades, a safe reactor, an unpowered reactor and a deliberate meltdown. It also saves screenshots to `build/run/clientGameTest/screenshots/`.
+`src/gametest/.../VoltworksClientGameTest.java` launches the game, creates a normal world (fixed seed), builds every machine setup, runs 700 ticks, and checks the results: machine outputs, power flow, battery charging, ore generation, loot tables, tool tiers, 3×3 drilling, upgrades, item pipes, the wrench, a safe reactor, an unpowered reactor and a deliberate meltdown. It also saves screenshots to `build/run/clientGameTest/screenshots/`.
 
 ## Assets
 
