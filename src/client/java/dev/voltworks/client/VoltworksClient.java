@@ -22,6 +22,13 @@ import net.minecraft.world.item.BlockItem;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 
 public class VoltworksClient implements ClientModInitializer {
+	/** Opens JEI's recipe page for an item; set by the JEI plugin when JEI is installed (used by the in-game test). */
+	public static java.util.function.Consumer<net.minecraft.world.item.ItemStack> showRecipes = stack -> {
+	};
+	/** Opens one of the Voltworks machine pages in JEI ("alloy_smelting", "crushing", "refining"); set by the JEI plugin. */
+	public static java.util.function.Consumer<String> showMachinePage = id -> {
+	};
+
 	@Override
 	public void onInitializeClient() {
 		for (MachineMenu.Kind kind : MachineMenu.Kind.values()) {

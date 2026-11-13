@@ -1200,6 +1200,14 @@ public class GenAssets {
 		lang.put("tooltip.voltworks.pipe.chests", "To pull from a chest: sneak + right-click that pipe arm with a Wrench (Extract)");
 		lang.put("jei.voltworks.crafter.missing", "Not in storage (highlighted)");
 		lang.put("jei.voltworks.crafter.still_set", "The pattern is set anyway");
+		lang.put("jei.voltworks.cost", "%s J, %s s");
+		lang.put("jei.voltworks.crusher.crusher", "Crusher");
+		lang.put("jei.voltworks.crusher.industrial", "Industrial");
+		lang.put("jei.voltworks.crusher.same", "Both crushers");
+		lang.put("jei.voltworks.info.steel", "Made in the Alloy Smelter (a powered machine): 1 Iron Ingot or Iron Dust + 2 Coal or Charcoal = 1 Steel Ingot.");
+		lang.put("jei.voltworks.info.silicon", "Made in the Alloy Smelter: 2 Sand + 1 Coal = 1 Silicon, or 1 Nether Quartz + 1 Coal = 2 Silicon.");
+		lang.put("jei.voltworks.info.refined_uranium", "Uranium can't be smelted or crushed. Refine Raw Uranium (or uranium ore) in the Uranium Refiner. Fuel Rods are made from it.");
+		lang.put("jei.voltworks.info.depleted_fuel_rod", "Left in the Reactor Chamber when a Fuel Rod runs out. Reprocess it in the Uranium Refiner for 1 Refined Uranium, or crush it for 4 Lead Dust.");
 		lang.put("gui.voltworks.filter.allow", "Allow");
 		lang.put("gui.voltworks.filter.deny", "Deny");
 		lang.put("gui.voltworks.filter.allow.hint", "Only items in the filter pass. An empty filter lets everything through. Click to switch to Deny.");

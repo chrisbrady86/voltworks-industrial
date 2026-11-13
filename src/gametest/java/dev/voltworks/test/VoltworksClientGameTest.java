@@ -151,6 +151,23 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(20);
 			context.takeScreenshot("voltworks-computers-world");
+			// JEI (present in the test run): how steel and tin dust are made
+			context.runOnClient(client -> dev.voltworks.client.VoltworksClient.showRecipes.accept(new ItemStack(ModItems.STEEL_INGOT)));
+			context.waitTicks(20);
+			context.takeScreenshot("voltworks-jei-steel");
+			context.runOnClient(client -> dev.voltworks.client.VoltworksClient.showRecipes.accept(new ItemStack(ModItems.TIN_DUST)));
+			context.waitTicks(20);
+			context.takeScreenshot("voltworks-jei-tin-dust");
+			context.runOnClient(client -> dev.voltworks.client.VoltworksClient.showRecipes.accept(new ItemStack(ModItems.SILICON)));
+			context.waitTicks(20);
+			context.takeScreenshot("voltworks-jei-silicon");
+			context.runOnClient(client -> dev.voltworks.client.VoltworksClient.showMachinePage.accept("alloy_smelting"));
+			context.waitTicks(20);
+			context.takeScreenshot("voltworks-jei-alloy");
+			context.runOnClient(client -> dev.voltworks.client.VoltworksClient.showMachinePage.accept("refining"));
+			context.waitTicks(20);
+			context.takeScreenshot("voltworks-jei-refining");
+			context.runOnClient(client -> client.gui.setScreen(null));
 			if (!failures.isEmpty()) {
 				throw new AssertionError("Voltworks checks failed:\n - " + String.join("\n - ", failures));
 			}

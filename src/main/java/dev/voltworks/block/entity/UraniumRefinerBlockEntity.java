@@ -26,14 +26,18 @@ public class UraniumRefinerBlockEntity extends ProcessingMachineBlockEntity {
 		super(ModBlockEntities.URANIUM_REFINER, pos, state, 1, 8_000, ENERGY_PER_TICK, TICKS);
 	}
 
-	/** What one input item refines into. */
-	public static Optional<ItemStack> refine(ItemStack input) {
-		Map<Item, Integer> recipes = Map.of(
+	/** Input item -> how much Refined Uranium it gives. */
+	public static Map<Item, Integer> recipes() {
+		return Map.of(
 				ModItems.RAW_URANIUM, 1,
 				ModBlocks.URANIUM_ORE.asItem(), 1,
 				ModBlocks.DEEPSLATE_URANIUM_ORE.asItem(), 1,
 				ModItems.DEPLETED_FUEL_ROD, 1);
-		Integer count = recipes.get(input.getItem());
+	}
+
+	/** What one input item refines into. */
+	public static Optional<ItemStack> refine(ItemStack input) {
+		Integer count = recipes().get(input.getItem());
 		return count == null ? Optional.empty() : Optional.of(new ItemStack(ModItems.REFINED_URANIUM, count));
 	}
 

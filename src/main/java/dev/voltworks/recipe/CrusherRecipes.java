@@ -82,6 +82,20 @@ public final class CrusherRecipes {
 		return Optional.of(new ItemStack(o.item(), count));
 	}
 
+	/** One crusher recipe: the input, what the Crusher makes, and what the Industrial Crusher makes (for JEI). */
+	public record Entry(ItemStack input, ItemStack crusher, ItemStack industrial) {
+	}
+
+	public static java.util.List<Entry> all() {
+		java.util.List<Entry> list = new java.util.ArrayList<>();
+		for (var e : RECIPES.entrySet()) {
+			ItemStack in = new ItemStack(e.getKey());
+			list.add(new Entry(in, get(in, false).orElseThrow(), get(in, true).orElseThrow()));
+		}
+		list.sort(java.util.Comparator.comparing(en -> net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(en.input().getItem()).toString()));
+		return list;
+	}
+
 	public static boolean has(ItemStack input) {
 		return RECIPES.containsKey(input.getItem());
 	}

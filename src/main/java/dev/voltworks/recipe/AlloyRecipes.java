@@ -13,7 +13,13 @@ import net.minecraft.world.level.ItemLike;
 
 /** Alloy Smelter recipes: two inputs (in either slot order) -> one output. */
 public final class AlloyRecipes {
-	public record Input(Predicate<ItemStack> test, int count) {
+	/** One input: what matches, how many are used, and example items to show (e.g. in JEI). */
+	public record Input(Predicate<ItemStack> test, int count, List<Item> display) {
+		/** The example items as stacks of {@code count}. */
+		public List<ItemStack> displayStacks() {
+			return display.stream().map(i -> new ItemStack(i, count)).toList();
+		}
+
 		boolean matches(ItemStack stack) {
 			return !stack.isEmpty() && test.test(stack) && stack.getCount() >= count;
 		}
@@ -40,11 +46,11 @@ public final class AlloyRecipes {
 
 	private static Input of(ItemLike item, int count) {
 		Item i = item.asItem();
-		return new Input(s -> s.is(i), count);
+		return new Input(s -> s.is(i), count, List.of(i));
 	}
 
 	private static Input coal(int count) {
-		return new Input(s -> s.is(ItemTags.COALS), count); // coal or charcoal
+		return new Input(s -> s.is(ItemTags.COALS), count, List.of(Items.COAL, Items.CHARCOAL)); // coal or charcoal
 	}
 
 	public static void init() {
@@ -54,6 +60,11 @@ public final class AlloyRecipes {
 		// Silicon for computer chips: reduce sand (or nether quartz) with coal
 		RECIPES.add(new Recipe(of(Items.SAND, 2), coal(1), ModItems.SILICON, 1));
 		RECIPES.add(new Recipe(of(Items.QUARTZ, 1), coal(1), ModItems.SILICON, 2));
+	}
+
+	/** Every alloy recipe (for JEI). */
+	public static List<Recipe> all() {
+		return List.copyOf(RECIPES);
 	}
 
 	public static Optional<Match> find(ItemStack slot0, ItemStack slot1) {

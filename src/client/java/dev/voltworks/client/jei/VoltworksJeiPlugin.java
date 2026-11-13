@@ -1,9 +1,14 @@
 package dev.voltworks.client.jei;
 
 import dev.voltworks.Voltworks;
+import dev.voltworks.block.entity.UraniumRefinerBlockEntity;
 import dev.voltworks.menu.ComputerCrafterMenu;
 import dev.voltworks.menu.NetworkMenu;
 import dev.voltworks.network.StorageActionPayload;
+import dev.voltworks.recipe.AlloyRecipes;
+import dev.voltworks.recipe.CrusherRecipes;
+import dev.voltworks.registry.ModBlocks;
+import dev.voltworks.registry.ModItems;
 import dev.voltworks.registry.ModMenus;
 import dev.voltworks.storage.StorageNetwork.StoredItem;
 import java.util.ArrayList;
@@ -19,6 +24,12 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.types.IRecipeType;
+import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.helpers.IGuiHelper;
+import mezz.jei.api.runtime.IJeiRuntime;
+import mezz.jei.api.registration.IRecipeCatalystRegistration;
+import mezz.jei.api.registration.IRecipeCategoryRegistration;
+import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
@@ -43,6 +54,51 @@ public class VoltworksJeiPlugin implements IModPlugin {
 	@Override
 	public Identifier getPluginUid() {
 		return Voltworks.id("jei");
+	}
+
+	@Override
+	public void onRuntimeAvailable(IJeiRuntime runtime) {
+		dev.voltworks.client.VoltworksClient.showRecipes = stack -> runtime.getRecipesGui().show(
+				runtime.getJeiHelpers().getFocusFactory().createFocus(RecipeIngredientRole.OUTPUT, VanillaTypes.ITEM_STACK, stack));
+		dev.voltworks.client.VoltworksClient.showMachinePage = id -> runtime.getRecipesGui().showTypes(List.of(switch (id) {
+			case "crushing" -> MachineCategories.CRUSHING;
+			case "refining" -> MachineCategories.REFINING;
+			default -> MachineCategories.ALLOY;
+		}));
+	}
+
+	/** Pages for the machines with their own recipes (Alloy Smelter, Crushers, Uranium Refiner). */
+	@Override
+	public void registerCategories(IRecipeCategoryRegistration registration) {
+		IGuiHelper gui = registration.getJeiHelpers().getGuiHelper();
+		registration.addRecipeCategories(new MachineCategories.Alloy(gui), new MachineCategories.Crushing(gui), new MachineCategories.Refiner(gui));
+	}
+
+	@Override
+	public void registerRecipes(IRecipeRegistration registration) {
+		registration.addRecipes(MachineCategories.ALLOY, AlloyRecipes.all());
+		registration.addRecipes(MachineCategories.CRUSHING, CrusherRecipes.all());
+		List<MachineCategories.Refining> refining = new ArrayList<>();
+		UraniumRefinerBlockEntity.recipes().forEach((item, count) ->
+				refining.add(new MachineCategories.Refining(new ItemStack(item), new ItemStack(ModItems.REFINED_URANIUM, count))));
+		refining.sort(java.util.Comparator.comparing(r -> r.input().getHoverName().getString()));
+		registration.addRecipes(MachineCategories.REFINING, refining);
+
+		// Items that no recipe page explains on its own
+		registration.addIngredientInfo(ModItems.STEEL_INGOT, Component.translatable("jei.voltworks.info.steel"));
+		registration.addIngredientInfo(ModItems.SILICON, Component.translatable("jei.voltworks.info.silicon"));
+		registration.addIngredientInfo(ModItems.REFINED_URANIUM, Component.translatable("jei.voltworks.info.refined_uranium"));
+		registration.addIngredientInfo(ModItems.DEPLETED_FUEL_ROD, Component.translatable("jei.voltworks.info.depleted_fuel_rod"));
+	}
+
+	/** Which machines do what: clicking a machine in JEI shows its recipes, and the furnaces join vanilla smelting. */
+	@Override
+	public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
+		registration.addCraftingStation(MachineCategories.ALLOY, ModBlocks.ALLOY_SMELTER);
+		registration.addCraftingStation(MachineCategories.CRUSHING, ModBlocks.CRUSHER, ModBlocks.INDUSTRIAL_CRUSHER);
+		registration.addCraftingStation(MachineCategories.REFINING, ModBlocks.URANIUM_REFINER);
+		registration.addCraftingStation(RecipeTypes.SMELTING, ModBlocks.ELECTRIC_FURNACE, ModBlocks.INDUCTION_FURNACE);
+		registration.addCraftingStation(RecipeTypes.CRAFTING, ModBlocks.COMPUTER_CRAFTER);
 	}
 
 	@Override
