@@ -19,7 +19,7 @@ Power goes to machines first, then to batteries. The front gauge shows the charg
 ---
 Batteries
 
-Small: 25,000 J
+Small: 40,000 J
 Medium: 100,000 J
 Large: 1,000,000 J
 Huge: 10,000,000 J
@@ -60,7 +60,7 @@ Item Pipe: 4 items/s.
 Fast (red): 16 items/s.
 Express (gold): 64 items/s, near instant.
 
-The pipe touching the source sets the rate.
+A line runs at the speed of its slowest pipe.
 ---
 Filter Pipe
 

@@ -128,11 +128,11 @@ public class GenAssets {
 			itemDef(item, "voltworks:item/" + item);
 		}
 		// All use a circuit + tin; the centre ingredient picks the upgrade.
-		shapedN("speed_upgrade", 1, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
+		shapedN("speed_upgrade", 1, new String[]{"TCT", "RXR"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
 				"C", "voltworks:circuit", "X", "minecraft:gold_ingot");
-		shapedN("capacity_upgrade", 1, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
+		shapedN("capacity_upgrade", 1, new String[]{"TCT", "RXR"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
 				"C", "voltworks:circuit", "X", "voltworks:power_cell");
-		shapedN("ejector_upgrade", 1, new String[]{"TRT", "CXC"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
+		shapedN("ejector_upgrade", 1, new String[]{"TCT", "RXR"}, "T", "voltworks:tin_ingot", "R", "minecraft:redstone",
 				"C", "voltworks:circuit", "X", "minecraft:hopper");
 	}
 
@@ -1093,7 +1093,7 @@ public class GenAssets {
 				"F", "minecraft:furnace", "M", "voltworks:machine_frame");
 		shaped("battery_box", 1, new String[]{"LRL", "RMR", "LRL"}, "L", "voltworks:lead_ingot", "R", "minecraft:redstone",
 				"M", "voltworks:machine_frame");
-		shaped("small_battery", 1, new String[]{"LRL", "RCR", "LRL"}, "L", "voltworks:lead_ingot", "R", "minecraft:redstone",
+		shaped("small_battery", 1, new String[]{"LCL", "R R"}, "L", "voltworks:lead_ingot", "R", "minecraft:redstone",
 				"C", "minecraft:copper_ingot");
 		shaped("large_battery", 1, new String[]{"BCB", "SAS", "BCB"}, "B", "voltworks:battery_box", "C", "voltworks:circuit",
 				"S", "voltworks:steel_ingot", "A", "voltworks:advanced_machine_frame");

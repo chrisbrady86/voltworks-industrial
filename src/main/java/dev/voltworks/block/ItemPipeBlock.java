@@ -50,7 +50,7 @@ public class ItemPipeBlock extends BaseEntityBlock {
 	}
 
 	/**
-	 * Speed tier. {@code batch}: items an extracting side pulls every {@link ItemPipeBlockEntity#INTERVAL} ticks.
+	 * Speed tier. {@code batch}: items moved per {@link ItemPipeBlockEntity#INTERVAL} ticks; a route goes at its slowest pipe's rate.
 	 * {@code ticksPerBlock}: how long an item takes to cross one pipe of this tier.
 	 */
 	public enum Tier {

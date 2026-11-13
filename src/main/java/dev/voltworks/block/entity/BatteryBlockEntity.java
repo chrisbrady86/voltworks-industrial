@@ -18,7 +18,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 public class BatteryBlockEntity extends BlockEntity implements EnergyReceiver, VoltTicking, StatusReporter, EnergyGauge {
 	/** Battery sizes. The Medium Battery is the original Battery Box (its block id is still "battery_box"). */
 	public enum Tier {
-		SMALL(25_000, 128), MEDIUM(100_000, 512), LARGE(1_000_000, 2_048), HUGE(10_000_000, 8_192);
+		SMALL(40_000, 128), MEDIUM(100_000, 512), LARGE(1_000_000, 2_048), HUGE(10_000_000, 8_192);
 
 		public final int capacity, maxIo;
 

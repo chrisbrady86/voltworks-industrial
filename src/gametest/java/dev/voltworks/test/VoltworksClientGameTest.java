@@ -511,7 +511,7 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 
 	private static void buildLogistics(ServerLevel level, BlockPos o) {
 		BlockPos l = logisticsOrigin(o);
-		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 27; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 29; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
 
 		// Row 1: chest -> chest across three pipes, first arm switched to extract with the wrench
 		level.setBlockAndUpdate(l, Blocks.CHEST.defaultBlockState());
@@ -584,12 +584,13 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		}
 
 		// Rows 7-8: the same 3-pipe line in basic and express pipes, 256 cobblestone each
-		for (int[] row : new int[][]{{19, 0}, {21, 1}}) {
+		// Row 11 (z=28): an Express pipe at the source feeding two basic pipes -> must only run at basic speed
+		for (int[] row : new int[][]{{19, 0}, {21, 1}, {28, 2}}) {
 			Block pipe = row[1] == 0 ? ModBlocks.ITEM_PIPE : ModBlocks.EXPRESS_ITEM_PIPE;
 			BlockPos src = l.offset(0, 0, row[0]);
 			level.setBlockAndUpdate(src, Blocks.CHEST.defaultBlockState());
 			level.setBlockAndUpdate(src.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
-			for (int x = 1; x <= 3; x++) placePipe(level, src.offset(x, 0, 0), pipe);
+			for (int x = 1; x <= 3; x++) placePipe(level, src.offset(x, 0, 0), row[1] == 2 && x > 1 ? ModBlocks.ITEM_PIPE : pipe);
 			for (int slot = 0; slot < 4; slot++) put(level, src, slot, Items.COBBLESTONE, 64);
 			WrenchItem.toggleExtract(level, src.offset(1, 0, 0), Direction.WEST);
 		}
@@ -668,6 +669,11 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		expect(fails, level, l.offset(0, 0, 26), 0, Items.RAW_IRON, 8, "Chest with a plain (not Extract) arm keeps its 8 raw iron");
 
 		// Rows 7-8: tiers. Basic (4/s) is still busy with 256 items; express (64/s) has finished.
+		int mixedMoved = count((Container) level.getBlockEntity(l.offset(4, 0, 28)), Items.COBBLESTONE);
+		System.out.println("[voltworks-test] Express pipe at the source of a basic line delivered " + mixedMoved + "/256");
+		if (mixedMoved >= 256 || mixedMoved == 0) {
+			fails.add("A line runs at its slowest pipe's rate: one Express pipe must not make basic pipes fast (" + mixedMoved + " moved)");
+		}
 		BlockPos basicSrc = l.offset(0, 0, 19), expressSrc = l.offset(0, 0, 21);
 		int basicMoved = count((Container) level.getBlockEntity(basicSrc.offset(4, 0, 0)), Items.COBBLESTONE);
 		int expressMoved = count((Container) level.getBlockEntity(expressSrc.offset(4, 0, 0)), Items.COBBLESTONE);
@@ -724,6 +730,9 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		placePipe(level, c.offset(2, 0, 6), ModBlocks.DATA_CABLE);
 		place(level, c.offset(3, 0, 6), ModBlocks.STORAGE_TERMINAL);
 		place(level, c.offset(4, 0, 6), ModBlocks.COMPUTER_CRAFTER);
+		// A plain item pipe touching the powered rack, with a chest beyond it: the drives must stay in the rack
+		level.setBlockAndUpdate(c.offset(1, 0, 4), Blocks.CHEST.defaultBlockState());
+		placePipe(level, c.offset(1, 0, 5));
 		place(level, c.offset(3, 0, 7), ModBlocks.DRIVE_RACK);
 		ItemStack diamonds = new ItemStack(ModItems.MEDIUM_HARD_DRIVE);
 		HardDriveItem.setContents(diamonds, DriveContents.EMPTY.add(new ItemStack(Items.DIAMOND), 5));
@@ -734,7 +743,7 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		BlockPos c = computersOrigin(o);
 
 		// Batteries: capacity and per-tick throughput
-		int[][] expected = {{25_000, 128}, {1_000_000, 2_048}, {10_000_000, 8_192}};
+		int[][] expected = {{40_000, 128}, {1_000_000, 2_048}, {10_000_000, 8_192}};
 		for (int i = 0; i < 3; i++) {
 			BatteryBlockEntity b = (BatteryBlockEntity) level.getBlockEntity(c.offset(i * 2, 0, 0));
 			int cap = b.getMaxEnergy(), io = b.receiveEnergy(Integer.MAX_VALUE, true);
@@ -767,6 +776,7 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			fails.add("Network should be online with 2 drives / 5,120 items (online=" + net.isOnline() + ", " + net.driveCount() + " drives, " + net.capacity() + ")");
 		}
 		if (net.count(new ItemStack(Items.DIAMOND)) != 0) fails.add("Drives in an unpowered rack must be offline");
+		if (!((Container) level.getBlockEntity(c.offset(1, 0, 4))).isEmpty()) fails.add("An item pipe must not pull hard drives out of a Drive Rack");
 
 		// Computer Crafter: pattern = 2 planks stacked -> 4 sticks; 8 planks in storage -> 4 crafts
 		net.insert(new ItemStack(Items.OAK_PLANKS, 8));

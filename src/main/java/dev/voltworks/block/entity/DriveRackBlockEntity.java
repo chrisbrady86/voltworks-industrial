@@ -68,6 +68,12 @@ public class DriveRackBlockEntity extends PoweredContainerBlockEntity implements
 		return stack.getItem() instanceof HardDriveItem;
 	}
 
+	/** Drives are only ever taken out by hand: pipes and hoppers must not empty a rack and cut off its storage. */
+	@Override
+	protected boolean allowExtract(int slot, ItemStack stack) {
+		return false;
+	}
+
 	@Override
 	public int getMaxStackSize() {
 		return 1;

@@ -9,7 +9,7 @@ An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it t
 **Power** (measured in J)
 - **Generator** — burns furnace fuel, 10 J/t (one coal = 4,000 J). **Solar Panel** — 1 J/t in daylight. **Thermal Generator** — 5 J/t per adjacent lava source.
 - **Reactor Chamber** — 3×3 grid of Fuel Rods (Refined Uranium + lead) and Heat Vents; needs a redstone signal; adjacent rods give more power *and* heat; pauses when its buffer is full; melts down at 100% heat. A comparator reads its heat.
-- **Copper Cable** carries power. **Batteries**: Small 25,000 J (128 J/t) · Medium 100,000 J (512 J/t) · Large 1,000,000 J (2,048 J/t) · Huge 10,000,000 J (8,192 J/t). Power goes to machines first, then batteries.
+- **Copper Cable** carries power. **Batteries**: Small 40,000 J (128 J/t) · Medium 100,000 J (512 J/t) · Large 1,000,000 J (2,048 J/t) · Huge 10,000,000 J (8,192 J/t). Power goes to machines first, then batteries.
 
 **Machines**
 - Tier 1: **Crusher** (ore → 2 dust), **Electric Furnace**, **Alloy Smelter** (iron + 2 coal → steel).
@@ -19,7 +19,7 @@ An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it t
 
 **Logistics**
 - **Item Pipes** — clear glass pipes linking chests, hoppers and machines; you can watch the items travel through them. Pipes pull finished items out of machines into chests automatically (machine outputs never go into other machines this way, so nothing loops). To pull from a chest, sneak + right-click that arm with the wrench to set it to Extract (striped collar); items go to the nearest inventory with room.
-  - **Item Pipe** (tin) 4 items/s · **Fast Item Pipe** (steel, red rims) 16 items/s · **Express Item Pipe** (gold, gold rims) 64 items/s and near-instant travel. The pipe touching the source sets the pull rate.
+  - **Item Pipe** (tin) 4 items/s · **Fast Item Pipe** (steel, red rims) 16 items/s · **Express Item Pipe** (gold, gold rims) 64 items/s and near-instant travel. A line runs at its slowest pipe's rate, so upgrade the whole line.
   - **Filter Pipe** (purple) — right-click to set up to 9 items and Allow / Deny. Only matching items pass through it, so a chest behind one only receives those.
 - **Wrench** — rotate blocks, set each machine side to None / Input / Output / Both, right-click a pipe arm to connect / disconnect it, sneak + right-click a pipe arm on an inventory to toggle Extract, and sneak + right-click other Voltworks blocks to pick them up.
 - **Voltworks Guide** — in-game book (book + copper ingot) explaining everything; pages live in `tools/guide.txt`.

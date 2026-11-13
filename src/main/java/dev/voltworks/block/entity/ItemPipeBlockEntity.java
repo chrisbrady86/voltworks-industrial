@@ -34,7 +34,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 
 /**
  * Moves items through a pipe network. Items really travel: every {@value #INTERVAL} ticks an extracting side pulls a
- * batch (set by this pipe's {@link ItemPipeBlock.Tier}) out of the inventory it faces and sends it along the shortest
+ * batch (set by the slowest {@link ItemPipeBlock.Tier} on the route) out of the inventory it faces and sends it along the shortest
  * route to an inventory that has room for it. The batch is carried in this pipe's {@link Transit} list until it
  * arrives (each pipe on the way adds its tier's travel time), then it is inserted. If the destination filled up in the
  * meantime the items go to another inventory on the network, else back to where they came from, else drop.
@@ -185,7 +185,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
 				Container dest = HopperBlockEntity.getContainerAt(level, route.pos());
 				if (dest == null || dest == source) continue;
 				int room = room(dest, route.face(), stack) - inFlightTo(route.pos(), stack);
-				int amount = Math.min(Math.min(tier().batch, stack.getCount()), room);
+				int amount = Math.min(Math.min(routeBatch(level, route), stack.getCount()), room);
 				if (amount <= 0) continue;
 				ItemStack moving = source.removeItem(slot, amount);
 				if (moving.isEmpty()) return false;
@@ -195,6 +195,16 @@ public class ItemPipeBlockEntity extends BlockEntity {
 			}
 		}
 		return false;
+	}
+
+	/** A route moves items as fast as its slowest pipe: one Express pipe at the source doesn't speed up a basic line. */
+	private static int routeBatch(Level level, Route route) {
+		int batch = Integer.MAX_VALUE;
+		for (BlockPos p : route.path()) {
+			ItemPipeBlock.Tier t = level.getBlockState(p).getBlock() instanceof ItemPipeBlock pipe ? pipe.tier : ItemPipeBlock.Tier.BASIC;
+			batch = Math.min(batch, t.batch);
+		}
+		return batch == Integer.MAX_VALUE ? ItemPipeBlock.Tier.BASIC.batch : batch;
 	}
 
 	private Transit newTransit(Level level, ItemStack stack, Route route, Direction sourceDir) {

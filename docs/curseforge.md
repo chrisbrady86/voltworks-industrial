@@ -57,7 +57,7 @@ Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through 
 - **Solar Panel** — free power in daylight.
 - **Thermal Generator** — sits next to lava source blocks: 5 J/t per source, up to 25 J/t.
 - **Reactor Chamber** — the big one. See below.
-- **Copper Cable** connects everything; **Batteries** come in four sizes, from 25,000 J to 10,000,000 J. Machines get power first, batteries get the surplus.
+- **Copper Cable** connects everything; **Batteries** come in four sizes, from 40,000 J to 10,000,000 J. Machines get power first, batteries get the surplus.
 
 ## 🏭 Machines
 | Machine | What it does |

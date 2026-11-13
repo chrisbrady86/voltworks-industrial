@@ -1,4 +1,4 @@
 { "type": "minecraft:crafting_shaped",
-  "pattern": ["TRT", "CXC"],
+  "pattern": ["TCT", "RXR"],
   "key": { "T": "voltworks:tin_ingot", "R": "minecraft:redstone", "C": "voltworks:circuit", "X": "minecraft:hopper" },
   "result": { "id": "voltworks:ejector_upgrade", "count": 1 } }
