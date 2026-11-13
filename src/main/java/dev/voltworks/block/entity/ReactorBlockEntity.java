@@ -22,7 +22,8 @@ import org.jspecify.annotations.Nullable;
  * Reactor Chamber: a 3x3 grid of fuel rods and heat vents.
  *
  * <ul>
- *   <li>Runs only while it receives a redstone signal.</li>
+ *   <li>Runs only while it receives a redstone signal, and pauses (no power, heat or fuel use) while its
+ *       internal buffer is full, so an idle reactor doesn't waste fuel.</li>
  *   <li>Each fuel rod "pulses" once, plus once more for every rod directly beside it in the grid.
  *       Each pulse makes {@value #POWER_PER_PULSE} J and {@value #HEAT_PER_PULSE} heat per tick.</li>
  *   <li>Each heat vent removes {@value #VENT_BASE} heat per tick, plus {@value #VENT_PER_ROD} for every rod beside it.</li>
@@ -34,13 +35,13 @@ import org.jspecify.annotations.Nullable;
 public class ReactorBlockEntity extends PoweredContainerBlockEntity implements StatusReporter {
 	public static final int SIZE = 3;
 	public static final int MAX_HEAT = 10_000;
-	public static final int POWER_PER_PULSE = 10;
+	public static final int POWER_PER_PULSE = 25;
 	public static final int HEAT_PER_PULSE = 2;
 	public static final int VENT_BASE = 2;
 	public static final int VENT_PER_ROD = 2;
 	public static final int WATER_COOLING = 2;
 	public static final int PASSIVE_COOLING = 1;
-	public static final float MELTDOWN_POWER = 7.0F;
+	public static final float MELTDOWN_POWER = 12.0F; // TNT is 4, a charged creeper 6
 	public static final int MAX_PUSH = 512;
 	private static final int[] ALL_SLOTS = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -79,7 +80,7 @@ public class ReactorBlockEntity extends PoweredContainerBlockEntity implements S
 
 	@Override
 	public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
-		boolean enabled = level.hasNeighborSignal(pos);
+		boolean enabled = level.hasNeighborSignal(pos) && energy < getCapacity();
 		int output = 0, heatIn = 0, cooling = PASSIVE_COOLING;
 
 		// Work out this tick's numbers before changing any rods.

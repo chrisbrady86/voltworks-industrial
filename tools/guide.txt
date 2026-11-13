@@ -5,7 +5,7 @@ Power, cables and machines, from your first generator to a nuclear reactor.
 ---
 Power
 
-Generator: burns furnace fuel, 10 J/t.
+Generator: burns furnace fuel, 10 J/t. One coal = 4,000 J.
 
 Solar Panel: 1 J/t in daylight under open sky.
 
@@ -71,7 +71,7 @@ Advanced Drill: sneak + right-click for 3x3 mining.
 ---
 Reactor
 
-3x3 grid of Fuel Rods and Heat Vents. Needs redstone.
+3x3 grid of Fuel Rods and Heat Vents. Needs redstone. Pauses when its buffer is full.
 
 Rods side by side make more power and much more heat.
 

@@ -51,7 +51,7 @@ First public release.
 Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through copper cables, and feed it to machines that double (or triple) your ore output.
 
 ## ⚡ Power
-- **Generator** — burns any furnace fuel for 10 J/t.
+- **Generator** — burns any furnace fuel for 10 J/t (one coal = 4,000 J).
 - **Solar Panel** — free power in daylight.
 - **Thermal Generator** — sits next to lava source blocks: 5 J/t per source, up to 25 J/t.
 - **Reactor Chamber** — the big one. See below.

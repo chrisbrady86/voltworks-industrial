@@ -66,6 +66,13 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 					logisticsOrigin(origin(server)).getX() + 2, origin(server).getY() + 3, origin(server).getZ() - 3)));
 			context.waitTicks(10);
 			context.takeScreenshot("voltworks-pipes");
+			// The meltdown crater, from above and to the north
+			world.getServer().runOnServer(server -> {
+				BlockPos hot = meltdownPos(origin(server));
+				command(server, String.format("tp @a %d %d %d 0 50", hot.getX(), hot.getY() + 14, hot.getZ() - 16));
+			});
+			context.waitTicks(20);
+			context.takeScreenshot("voltworks-meltdown");
 			List<String> failures = world.getServer().computeOnServer(VoltworksClientGameTest::check);
 			// Open the sped-up crusher's GUI (upgrade slots + output) and screenshot it
 			world.getServer().runOnServer(server -> {
@@ -195,12 +202,21 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		// B (off): a rod but no redstone signal.
 		place(level, o.offset(12, 0, 7), ModBlocks.REACTOR_CHAMBER);
 		put(level, o.offset(12, 0, 7), 4, ModItems.FUEL_ROD, 1);
-		// C (meltdown): 9 rods, no vents, on its own platform 28 blocks away.
-		BlockPos hot = o.offset(28, 0, 0);
-		for (int x = -4; x <= 4; x++) for (int z = -4; z <= 4; z++) level.setBlockAndUpdate(hot.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+		// C (meltdown): 9 rods, no vents, on its own 17x17 platform far enough away that the blast spares the rest.
+		BlockPos hot = meltdownPos(o);
+		for (int x = -MELT_PLATFORM; x <= MELT_PLATFORM; x++) for (int z = -MELT_PLATFORM; z <= MELT_PLATFORM; z++) level.setBlockAndUpdate(hot.offset(x, -1, z), Blocks.STONE.defaultBlockState());
 		place(level, hot, ModBlocks.REACTOR_CHAMBER);
 		for (int i = 0; i < 9; i++) put(level, hot, i, ModItems.FUEL_ROD, 1);
 		level.setBlockAndUpdate(hot.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+		// Something to power: a reactor with a full buffer pauses, so give it 200,000 J of batteries to fill.
+		place(level, hot.west(), ModBlocks.BATTERY_BOX);
+		place(level, hot.north(), ModBlocks.BATTERY_BOX);
+		// D (idle): 2x2 rods + 5 vents, redstone on, nothing to power.
+		BlockPos idle = o.offset(14, 0, 9);
+		place(level, idle, ModBlocks.REACTOR_CHAMBER);
+		level.setBlockAndUpdate(idle.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+		for (int i : new int[]{0, 1, 3, 4}) put(level, idle, i, ModItems.FUEL_ROD, 1);
+		for (int i : new int[]{2, 5, 6, 7, 8}) put(level, idle, i, ModItems.HEAT_VENT, 1);
 
 		buildLogistics(level, o);
 
@@ -314,13 +330,13 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			BatteryBlockEntity battery = (BatteryBlockEntity) level.getBlockEntity(safe.west());
 			System.out.println("[voltworks-test] Safe reactor: " + r.getOutputPerTick() + " J/t, heat " + r.getHeat()
 					+ ", rod fuel " + fuel + "/" + FuelRodItem.LIFETIME + ", battery " + battery.getEnergy() + " J");
-			if (r.getOutputPerTick() != 2 * 2 * ReactorBlockEntity.POWER_PER_PULSE) fails.add("Two adjacent rods should make 40 J/t (got " + r.getOutputPerTick() + ")");
+			if (r.getOutputPerTick() != 2 * 2 * ReactorBlockEntity.POWER_PER_PULSE) fails.add("Two adjacent rods should make 4 pulses of power (got " + r.getOutputPerTick() + " J/t)");
 			if (r.getHeat() != 0) fails.add("Safe reactor (3 vents) should stay at 0 heat (got " + r.getHeat() + ")");
 			if (fuel >= FuelRodItem.LIFETIME) fails.add("Safe reactor should have burned some fuel");
 			if (battery.getEnergy() <= 0) fails.add("Reactor should have charged the adjacent Battery Box");
 			int rbars = level.getBlockState(safe.west()).getValue(MachineBlock.CHARGE);
 			System.out.println("[voltworks-test] Reactor-fed Battery Box gauge: " + rbars + "/6 bars (" + battery.getEnergy() + " J)");
-			if (rbars != 2) fails.add("Battery with ~28,000 J should show 2 of 6 bars (shows " + rbars + ")");
+			if (rbars != battery.gaugeLevel() || rbars < 3) fails.add("Reactor-fed battery should show its charge, at least 3 of 6 bars (shows " + rbars + ")");
 			if (r.getComparatorSignal() != 0) fails.add("Cold reactor comparator signal should be 0");
 		} else {
 			fails.add("Safe reactor is missing!");
@@ -331,11 +347,20 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			fails.add("Reactor without a redstone signal must not run");
 		}
 
-		BlockPos hot = o.offset(28, 0, 0);
+		// D: 2x2 rods with nothing to power. Its 30,000 J buffer fills in 100 ticks, then it must pause and save fuel.
+		ReactorBlockEntity idle = (ReactorBlockEntity) level.getBlockEntity(o.offset(14, 0, 9));
+		int idleFuel = FuelRodItem.getFuel(idle.getItem(0));
+		System.out.println("[voltworks-test] Idle reactor: buffer " + idle.getEnergy() + "/" + idle.getCapacity() + " J, rod fuel " + idleFuel
+				+ ", output " + idle.getOutputPerTick() + " J/t");
+		if (idle.getEnergy() != idle.getCapacity()) fails.add("Idle reactor should have filled its buffer (" + idle.getEnergy() + " J)");
+		if (idleFuel < FuelRodItem.LIFETIME - 150) fails.add("Reactor with a full buffer must stop burning fuel (rod at " + idleFuel + ")");
+		if (idle.getOutputPerTick() != 0) fails.add("Reactor with a full buffer should report 0 J/t");
+
+		BlockPos hot = meltdownPos(o);
 		int crater = 0;
-		for (int x = -4; x <= 4; x++) for (int z = -4; z <= 4; z++) if (level.getBlockState(hot.offset(x, -1, z)).isAir()) crater++;
+		for (int x = -MELT_PLATFORM; x <= MELT_PLATFORM; x++) for (int z = -MELT_PLATFORM; z <= MELT_PLATFORM; z++) if (level.getBlockState(hot.offset(x, -1, z)).isAir()) crater++;
 		boolean gone = !level.getBlockState(hot).is(ModBlocks.REACTOR_CHAMBER);
-		System.out.println("[voltworks-test] Overloaded reactor: melted down=" + gone + ", platform blocks destroyed=" + crater + "/81");
+		System.out.println("[voltworks-test] Overloaded reactor: melted down=" + gone + ", platform blocks destroyed=" + crater + "/" + (2 * MELT_PLATFORM + 1) * (2 * MELT_PLATFORM + 1));
 		if (!gone) fails.add("9-rod reactor with no cooling should have melted down");
 		if (crater < 10) fails.add("Meltdown should blow a crater in the platform (only " + crater + " blocks)");
 	}
@@ -347,6 +372,14 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 	 *   z=6:  CHEST(8 cobble) pipe[extract] pipe |cut| pipe CHEST             -> wrench-disabled join blocks the flow
 	 *   z=9:  GEN (rotated by wrench)   MACHINE FRAME (picked up by wrench)
 	 */
+	/** Half-width of the meltdown reactor's stone platform. */
+	private static final int MELT_PLATFORM = 8;
+
+	/** The meltdown reactor: far enough east that a full-power blast can't reach the main layout. */
+	private static BlockPos meltdownPos(BlockPos o) {
+		return o.offset(50, 0, 0);
+	}
+
 	private static BlockPos logisticsOrigin(BlockPos o) {
 		return o.offset(-12, 0, 0);
 	}

@@ -15,7 +15,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 /** Stores up to 100,000 J. Charges from generators, discharges into machines. */
 public class BatteryBlockEntity extends BlockEntity implements EnergyReceiver, VoltTicking, StatusReporter, EnergyGauge {
 	public static final int CAPACITY = 100_000;
-	public static final int MAX_IO = 64;
+	public static final int MAX_IO = 512;
 	private int energy;
 	private List<EnergyReceiver> receivers = List.of();
 	private int refresh;

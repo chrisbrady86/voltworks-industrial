@@ -19,6 +19,8 @@ import org.jspecify.annotations.Nullable;
 /** Burns furnace fuel to make power. 10 J/tick while burning; coal = 16,000 J. */
 public class GeneratorBlockEntity extends PoweredContainerBlockEntity {
 	public static final int OUTPUT_PER_TICK = 10;
+	/** Fuel burns this many times faster than in a furnace: coal (1,600 ticks) gives 400 ticks = 4,000 J. */
+	public static final int BURN_SPEED = 4;
 	public static final int MAX_PUSH_PER_TICK = 64;
 	private static final int[] SLOTS = {0};
 
@@ -35,7 +37,7 @@ public class GeneratorBlockEntity extends PoweredContainerBlockEntity {
 			int burn = fuel.isEmpty() ? 0
 					: ResolvableInt.getFromItem(fuel, DataComponents.COOKING_FUEL, CookingFuel::burnTime, this.getLootContext(level), 0);
 			if (burn > 0) {
-				progress = progressTotal = burn;
+				progress = progressTotal = Math.max(1, burn / BURN_SPEED);
 				ItemStackTemplate remainder = fuel.getItem().getCraftingRemainder();
 				fuel.shrink(1);
 				if (fuel.isEmpty() && remainder != null) {

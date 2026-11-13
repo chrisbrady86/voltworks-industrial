@@ -7,8 +7,8 @@ An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it t
 ## Features
 
 **Power** (measured in J)
-- **Generator** — burns furnace fuel, 10 J/t. **Solar Panel** — 1 J/t in daylight. **Thermal Generator** — 5 J/t per adjacent lava source.
-- **Reactor Chamber** — 3×3 grid of Fuel Rods and Heat Vents; needs a redstone signal; adjacent rods give more power *and* heat; melts down at 100% heat. A comparator reads its heat.
+- **Generator** — burns furnace fuel, 10 J/t (one coal = 4,000 J). **Solar Panel** — 1 J/t in daylight. **Thermal Generator** — 5 J/t per adjacent lava source.
+- **Reactor Chamber** — 3×3 grid of Fuel Rods and Heat Vents; needs a redstone signal; adjacent rods give more power *and* heat; pauses when its buffer is full; melts down at 100% heat. A comparator reads its heat.
 - **Copper Cable** carries power; **Battery Box** stores 100,000 J. Power goes to machines first, then batteries.
 
 **Machines**
@@ -40,7 +40,7 @@ To play: put `build/libs/voltworks-<version>.jar` and Fabric API in your `mods` 
 
 ## Automated test
 
-`src/gametest/.../VoltworksClientGameTest.java` launches the game, creates a normal world (fixed seed), builds every machine setup, runs 700 ticks, and checks the results: machine outputs, power flow, battery charging, ore generation, loot tables, tool tiers, 3×3 drilling, upgrades, item pipes, the wrench, a safe reactor, an unpowered reactor and a deliberate meltdown. It also saves screenshots to `build/run/clientGameTest/screenshots/`.
+`src/gametest/.../VoltworksClientGameTest.java` launches the game, creates a normal world (fixed seed), builds every machine setup, runs 700 ticks, and checks the results: machine outputs, power flow, battery charging, ore generation, loot tables, tool tiers, 3×3 drilling, upgrades, item pipes, the wrench, a safe reactor, an unpowered reactor, an idle reactor that saves fuel and a deliberate meltdown. It also saves screenshots to `build/run/clientGameTest/screenshots/`.
 
 ## Assets
 
