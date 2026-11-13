@@ -39,7 +39,7 @@ First public release.
 - Machine upgrades: Speed, Capacity, Ejector
 - Power tools: Electric Drill, Chainsaw (tree felling), Advanced Drill (3x3 mode), Charger
 - Logistics: glass Item Pipes in three speeds (watch the items travel), Filter Pipe, Wrench
-- Computer storage: Hard Drives (1K-64K), Drive Rack, Data Cable, searchable Storage Terminal, Computer Crafter
+- Computer storage: Hard Drives (1K-64K), Drive Rack, Data Cable, searchable Storage Terminal, Computer Crafter, Storage Interface (pipe access to storage)
 - New ores: Tin, Lead, Uranium
 ```
 

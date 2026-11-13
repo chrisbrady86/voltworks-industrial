@@ -30,6 +30,7 @@ An industrial tech mod for Minecraft **26.3** (Fabric). Generate power, run it t
 - **Hard Drives** — Small 1K, Medium 4K, Large 16K, Huge 64K items, up to 63 kinds each. Contents stay on the drive when you take it out.
 - **Drive Rack** — 8 drives; needs power (1 J/t + 1 per drive). **Data Cable** links racks, terminals and crafters (touching works too). Expand by adding drives, bigger drives or more racks.
 - **Storage Terminal** — search and browse everything stored; click to take, shift-click to your inventory, click holding an item (or shift-click from your inventory) to store.
+- **Storage Interface** — connects item pipes to storage: an Extract arm (sneak + wrench) pulls items out — put a Filter Pipe there to choose which, e.g. Raw Tin to a crusher — and plain arms put items in, so a second pipe brings the crusher's dust back.
 - **Computer Crafter** — set a 3×3 pattern from the storage list and craft x1 / x8 / x64 straight from storage; results go back in.
 
 **Tools** — Electric Drill, Chainsaw (fells whole trees; sneak to cut one log), Advanced Drill (sneak + right-click for 3×3 mining). Run on energy, recharge in the **Charger**.

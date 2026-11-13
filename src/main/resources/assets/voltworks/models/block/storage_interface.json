@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/orientable", "textures": { "front": "voltworks:block/storage_interface_front", "side": "voltworks:block/machine_side", "top": "voltworks:block/machine_top" } }

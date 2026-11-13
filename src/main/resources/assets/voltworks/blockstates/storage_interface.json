@@ -1,0 +1,10 @@
+{ "variants": {
+  "facing=north,lit=false": { "model": "voltworks:block/storage_interface" },
+  "facing=north,lit=true": { "model": "voltworks:block/storage_interface" },
+  "facing=east,lit=false": { "model": "voltworks:block/storage_interface", "y": 90 },
+  "facing=east,lit=true": { "model": "voltworks:block/storage_interface", "y": 90 },
+  "facing=south,lit=false": { "model": "voltworks:block/storage_interface", "y": 180 },
+  "facing=south,lit=true": { "model": "voltworks:block/storage_interface", "y": 180 },
+  "facing=west,lit=false": { "model": "voltworks:block/storage_interface", "y": 270 },
+  "facing=west,lit=true": { "model": "voltworks:block/storage_interface", "y": 270 }
+} }

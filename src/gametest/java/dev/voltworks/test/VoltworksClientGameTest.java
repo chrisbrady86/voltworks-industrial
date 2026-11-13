@@ -711,7 +711,7 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 
 	private static void buildComputers(ServerLevel level, BlockPos o) {
 		BlockPos c = computersOrigin(o);
-		for (int x = -2; x <= 8; x++) for (int z = -2; z <= 9; z++) level.setBlockAndUpdate(c.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+		for (int x = -2; x <= 10; x++) for (int z = -2; z <= 9; z++) level.setBlockAndUpdate(c.offset(x, -1, z), Blocks.STONE.defaultBlockState());
 
 		place(level, c, ModBlocks.SMALL_BATTERY);
 		place(level, c.offset(2, 0, 0), ModBlocks.LARGE_BATTERY);
@@ -725,11 +725,27 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		place(level, c.offset(0, 0, 6), ModBlocks.BATTERY_BOX);
 		fillBattery(level, c.offset(0, 0, 6));
 		place(level, c.offset(1, 0, 6), ModBlocks.DRIVE_RACK);
-		put(level, c.offset(1, 0, 6), 0, ModItems.SMALL_HARD_DRIVE, 1);
+		// The first drive starts with 2 raw tin and 8 cobblestone (for the Storage Interface test below)
+		ItemStack startDrive = new ItemStack(ModItems.SMALL_HARD_DRIVE);
+		HardDriveItem.setContents(startDrive, DriveContents.EMPTY.add(new ItemStack(ModItems.RAW_TIN), 2).add(new ItemStack(Items.COBBLESTONE), 8));
+		((Container) level.getBlockEntity(c.offset(1, 0, 6))).setItem(0, startDrive);
 		put(level, c.offset(1, 0, 6), 1, ModItems.MEDIUM_HARD_DRIVE, 1);
 		placePipe(level, c.offset(2, 0, 6), ModBlocks.DATA_CABLE);
 		place(level, c.offset(3, 0, 6), ModBlocks.STORAGE_TERMINAL);
 		place(level, c.offset(4, 0, 6), ModBlocks.COMPUTER_CRAFTER);
+		// Storage Interface: Filter Pipe (raw tin, Extract) -> pipe -> powered Crusher; return pipes back to the interface
+		//   z=6:  CRAFTER INTERFACE FILTER pipe CRUSHER      (battery south of the crusher at z=7)
+		//   z=5:           pipe                pipe
+		//   z=4:           pipe  pipe     pipe pipe
+		place(level, c.offset(5, 0, 6), ModBlocks.STORAGE_INTERFACE);
+		place(level, c.offset(8, 0, 6), ModBlocks.CRUSHER);
+		place(level, c.offset(8, 0, 7), ModBlocks.BATTERY_BOX);
+		fillBattery(level, c.offset(8, 0, 7));
+		placePipe(level, c.offset(6, 0, 6), ModBlocks.FILTER_PIPE);
+		placePipe(level, c.offset(7, 0, 6));
+		((FilterPipeBlockEntity) level.getBlockEntity(c.offset(6, 0, 6))).setFilter(0, new ItemStack(ModItems.RAW_TIN));
+		WrenchItem.toggleExtract(level, c.offset(6, 0, 6), Direction.WEST);
+		for (int[] p : new int[][]{{8, 5}, {8, 4}, {7, 4}, {6, 4}, {5, 4}, {5, 5}}) placePipe(level, c.offset(p[0], 0, p[1]));
 		// A plain item pipe touching the powered rack, with a chest beyond it: the drives must stay in the rack
 		level.setBlockAndUpdate(c.offset(1, 0, 4), Blocks.CHEST.defaultBlockState());
 		placePipe(level, c.offset(1, 0, 5));
@@ -777,6 +793,14 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		}
 		if (net.count(new ItemStack(Items.DIAMOND)) != 0) fails.add("Drives in an unpowered rack must be offline");
 		if (!((Container) level.getBlockEntity(c.offset(1, 0, 4))).isEmpty()) fails.add("An item pipe must not pull hard drives out of a Drive Rack");
+
+		// Storage Interface: only the raw tin went out (through the filter) to the crusher, and its dust came back
+		long rawTin = net.count(new ItemStack(ModItems.RAW_TIN)), tinDust = net.count(new ItemStack(ModItems.TIN_DUST));
+		long cobble = net.count(new ItemStack(Items.COBBLESTONE));
+		System.out.println("[voltworks-test] Storage Interface: raw tin in storage " + rawTin + ", tin dust " + tinDust + ", cobblestone " + cobble);
+		if (rawTin != 0) fails.add("The filtered Storage Interface line should have sent all raw tin to the crusher (" + rawTin + " left)");
+		if (tinDust != 4) fails.add("The crusher's 4 tin dust should be back in storage (" + tinDust + ")");
+		if (cobble != 8) fails.add("The filter must keep cobblestone in storage (" + cobble + " of 8 left)");
 
 		// Computer Crafter: pattern = 2 planks stacked -> 4 sticks; 8 planks in storage -> 4 crafts
 		net.insert(new ItemStack(Items.OAK_PLANKS, 8));

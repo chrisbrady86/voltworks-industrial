@@ -927,6 +927,9 @@ public class GenAssets {
 			  "block.voltworks.drive_rack": "Drive Rack",
 			  "block.voltworks.storage_terminal": "Storage Terminal",
 			  "block.voltworks.computer_crafter": "Computer Crafter",
+			  "block.voltworks.storage_interface": "Storage Interface",
+			  "message.voltworks.interface.online": "Storage Interface: online, %s / %s items",
+			  "message.voltworks.interface.offline": "Storage Interface: offline (no powered Drive Rack)",
 			  "gui.voltworks.search": "Search...",
 			  "gui.voltworks.storage.offline": "Offline: no powered Drive Rack",
 			  "gui.voltworks.storage.usage": "%s / %s items, %s types",
@@ -965,7 +968,7 @@ public class GenAssets {
 		}
 		// Energy gauge on the front: the Battery Box's big meter, a slim gauge on other machines.
 		// The Thermal Generator stores nothing, so it has none.
-		String gauge = BATTERY_COLORS.containsKey(name) ? "battery_gauge" : Set.of("thermal_generator", "storage_terminal", "computer_crafter").contains(name) ? null : "gauge";
+		String gauge = BATTERY_COLORS.containsKey(name) ? "battery_gauge" : Set.of("thermal_generator", "storage_terminal", "computer_crafter", "storage_interface").contains(name) ? null : "gauge";
 		if (gauge == null) {
 			facingStates(name, lit -> lit && hasOnTexture ? name + "_on" : name, true);
 		} else {
@@ -1067,7 +1070,7 @@ public class GenAssets {
 	static final List<String> BLOCKS = List.of("generator", "crusher", "electric_furnace", "battery_box", "solar_panel", "copper_cable", "machine_frame",
 			"advanced_machine_frame", "alloy_smelter", "industrial_crusher", "induction_furnace", "thermal_generator", "charger", "reactor_chamber", "item_pipe",
 			"fast_item_pipe", "express_item_pipe", "filter_pipe", "small_battery", "large_battery", "huge_battery", "uranium_refiner",
-			"data_cable", "drive_rack", "storage_terminal", "computer_crafter");
+			"data_cable", "drive_rack", "storage_terminal", "computer_crafter", "storage_interface");
 
 	static void data() throws Exception {
 		for (String b : BLOCKS) {
@@ -1466,6 +1469,21 @@ public class GenAssets {
 		});
 		machine("storage_terminal", false);
 		machine("computer_crafter", false);
+		// Storage Interface: two ports with arrows, out (green, up) and in (blue, down), where pipes plug in
+		png("block/storage_interface_front", (x, y, r) -> {
+			for (int[] port : new int[][]{{4, 1}, {11, -1}}) {
+				int cx = port[0], dir = port[1];
+				if (Math.abs(x - cx) <= 2 && y >= 3 && y <= 12) {
+					if (Math.abs(x - cx) == 2 || y == 3 || y == 12) return rgb(30, 32, 38);
+					int t = dir > 0 ? y - 5 : 10 - y;                           // arrow points up (out) or down (in)
+					boolean arrow = (t >= 0 && t <= 2 && Math.abs(x - cx) <= t / 2 + (t == 2 ? 1 : 0)) || (t >= 3 && t <= 5 && x == cx);
+					if (arrow) return dir > 0 ? rgb(110, 230, 120) : rgb(110, 200, 255);
+					return rgb(16, 40, 56);
+				}
+			}
+			return casing(x, y, r);
+		});
+		machine("storage_interface", false);
 
 		// Recipes
 		shaped("silicon_chip", 3, new String[]{"SSS", "RCR"}, "S", "voltworks:silicon", "R", "minecraft:redstone", "C", "minecraft:copper_ingot");
@@ -1479,6 +1497,8 @@ public class GenAssets {
 			  "ingredients": [ "voltworks:storage_terminal", "minecraft:crafting_table", "voltworks:silicon_chip", "voltworks:silicon_chip" ],
 			  "result": { "id": "voltworks:computer_crafter", "count": 1 } }
 			""");
+		shaped("storage_interface", 1, new String[]{"ICI", "HMH", "ICI"}, "I", "minecraft:iron_ingot", "C", "voltworks:silicon_chip",
+				"H", "minecraft:hopper", "M", "voltworks:machine_frame");
 		shaped("small_hard_drive", 1, new String[]{"ICI", "ICI", "IRI"}, "I", "minecraft:iron_ingot", "C", "voltworks:silicon_chip",
 				"R", "minecraft:redstone");
 		shaped("medium_hard_drive", 1, new String[]{"ICI", "CGC", "ICI"}, "I", "minecraft:iron_ingot", "C", "voltworks:silicon_chip",

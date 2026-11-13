@@ -11,6 +11,7 @@ import dev.voltworks.block.entity.InductionFurnaceBlockEntity;
 import dev.voltworks.block.entity.ComputerCrafterBlockEntity;
 import dev.voltworks.block.entity.DriveRackBlockEntity;
 import dev.voltworks.block.entity.FilterPipeBlockEntity;
+import dev.voltworks.block.entity.StorageInterfaceBlockEntity;
 import dev.voltworks.block.entity.StorageTerminalBlockEntity;
 import dev.voltworks.block.entity.ItemPipeBlockEntity;
 import dev.voltworks.block.entity.IndustrialCrusherBlockEntity;
@@ -34,6 +35,8 @@ public final class ModBlockEntities {
 			register("storage_terminal", StorageTerminalBlockEntity::new, ModBlocks.STORAGE_TERMINAL);
 	public static final BlockEntityType<ComputerCrafterBlockEntity> COMPUTER_CRAFTER =
 			register("computer_crafter", ComputerCrafterBlockEntity::new, ModBlocks.COMPUTER_CRAFTER);
+	public static final BlockEntityType<StorageInterfaceBlockEntity> STORAGE_INTERFACE =
+			register("storage_interface", StorageInterfaceBlockEntity::new, ModBlocks.STORAGE_INTERFACE);
 	public static final BlockEntityType<GeneratorBlockEntity> GENERATOR = register("generator", GeneratorBlockEntity::new, ModBlocks.GENERATOR);
 	public static final BlockEntityType<CrusherBlockEntity> CRUSHER = register("crusher", CrusherBlockEntity::new, ModBlocks.CRUSHER);
 	public static final BlockEntityType<ElectricFurnaceBlockEntity> ELECTRIC_FURNACE =

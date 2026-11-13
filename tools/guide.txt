@@ -154,3 +154,17 @@ Click list items to fill the 3x3 pattern, then press x1, x8 or x64.
 Ingredients come from storage; results go back into it.
 
 More space: add drives or racks.
+---
+Storage Interface
+
+Lets item pipes reach your storage.
+
+Extract arm (sneak + wrench) on it: pulls items out. Use a Filter Pipe to pick which.
+
+Plain arm: puts items in. Machines empty into it.
+---
+Example
+
+Interface -> Filter Pipe (Raw Tin) -> pipe -> Crusher.
+
+A second pipe from the Crusher back to the Interface stores the dust.

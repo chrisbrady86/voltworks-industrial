@@ -35,6 +35,7 @@ public final class ModBlocks {
 	public static final Block DRIVE_RACK = computer("drive_rack", () -> ModBlockEntities.DRIVE_RACK);
 	public static final Block STORAGE_TERMINAL = computer("storage_terminal", () -> ModBlockEntities.STORAGE_TERMINAL);
 	public static final Block COMPUTER_CRAFTER = computer("computer_crafter", () -> ModBlockEntities.COMPUTER_CRAFTER);
+	public static final Block STORAGE_INTERFACE = computer("storage_interface", () -> ModBlockEntities.STORAGE_INTERFACE);
 	public static final Block COPPER_CABLE = register("copper_cable", CableBlock::new,
 			BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).strength(0.4F).sound(SoundType.COPPER).noOcclusion());
 	public static final Block GENERATOR = machine("generator", () -> ModBlockEntities.GENERATOR,

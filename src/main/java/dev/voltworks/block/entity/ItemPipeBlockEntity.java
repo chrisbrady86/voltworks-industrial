@@ -304,6 +304,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
 
 	private static ItemStack insert(Level level, BlockPos pos, Direction face, ItemStack stack) {
 		Container dest = HopperBlockEntity.getContainerAt(level, pos);
+		if (dest instanceof StorageInterfaceBlockEntity storage) return storage.insert(stack);
 		return dest == null ? stack : HopperBlockEntity.addItem(null, dest, stack, face);
 	}
 
@@ -316,6 +317,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
 
 	/** How many of {@code stack} the container could take through {@code face}, without changing it. */
 	static int room(Container c, Direction face, ItemStack stack) {
+		if (c instanceof StorageInterfaceBlockEntity storage) return storage.room(stack);
 		int[] slots = c instanceof WorldlyContainer w ? w.getSlotsForFace(face) : allSlots(c);
 		int room = 0;
 		for (int slot : slots) {

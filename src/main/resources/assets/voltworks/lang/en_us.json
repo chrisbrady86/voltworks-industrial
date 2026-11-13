@@ -76,6 +76,9 @@
   "block.voltworks.drive_rack": "Drive Rack",
   "block.voltworks.storage_terminal": "Storage Terminal",
   "block.voltworks.computer_crafter": "Computer Crafter",
+  "block.voltworks.storage_interface": "Storage Interface",
+  "message.voltworks.interface.online": "Storage Interface: online, %s / %s items",
+  "message.voltworks.interface.offline": "Storage Interface: offline (no powered Drive Rack)",
   "gui.voltworks.search": "Search...",
   "gui.voltworks.storage.offline": "Offline: no powered Drive Rack",
   "gui.voltworks.storage.usage": "%s / %s items, %s types",
@@ -156,5 +159,7 @@
   "guide.voltworks.page.18": "Computer Storage\n\nSmelt 2 sand + coal in the Alloy Smelter for Silicon, then craft Silicon Chips.\n\nHard Drives hold items: 1K, 4K, 16K or 64K, up to 63 kinds each.",
   "guide.voltworks.page.19": "Drive Rack\n\nHolds 8 Hard Drives. Needs power: 1 J/t plus 1 per drive.\n\nLink racks, terminals and crafters with Data Cable (or let them touch).",
   "guide.voltworks.page.20": "Storage Terminal\n\nSee and search everything stored.\n\nClick: take a stack.\nRight-click: half.\nShift-click: to inventory.\n\nClick holding an item to store it.",
-  "guide.voltworks.page.21": "Computer Crafter\n\nClick list items to fill the 3x3 pattern, then press x1, x8 or x64.\n\nIngredients come from storage; results go back into it.\n\nMore space: add drives or racks."
+  "guide.voltworks.page.21": "Computer Crafter\n\nClick list items to fill the 3x3 pattern, then press x1, x8 or x64.\n\nIngredients come from storage; results go back into it.\n\nMore space: add drives or racks.",
+  "guide.voltworks.page.22": "Storage Interface\n\nLets item pipes reach your storage.\n\nExtract arm (sneak + wrench) on it: pulls items out. Use a Filter Pipe to pick which.\n\nPlain arm: puts items in. Machines empty into it.",
+  "guide.voltworks.page.23": "Example\n\nInterface -> Filter Pipe (Raw Tin) -> pipe -> Crusher.\n\nA second pipe from the Crusher back to the Interface stores the dust."
 }

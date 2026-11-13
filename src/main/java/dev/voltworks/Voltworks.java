@@ -71,6 +71,7 @@ public class Voltworks implements ModInitializer {
 					out.accept(ModBlocks.DRIVE_RACK);
 					out.accept(ModBlocks.STORAGE_TERMINAL);
 					out.accept(ModBlocks.COMPUTER_CRAFTER);
+					out.accept(ModBlocks.STORAGE_INTERFACE);
 					out.accept(ModItems.SMALL_HARD_DRIVE);
 					out.accept(ModItems.MEDIUM_HARD_DRIVE);
 					out.accept(ModItems.LARGE_HARD_DRIVE);
