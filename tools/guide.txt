@@ -33,7 +33,7 @@ Item Pipes
 @items item_pipe fast_item_pipe express_item_pipe filter_pipe wrench
 Pipes empty machines into chests by themselves.
 
-To pull from a chest, sneak + right-click the pipe arm with the Wrench. Faster pipes: red, then gold.
+Start a line at a chest and it pulls from it (striped collar). Sneak + Wrench the arm to switch. Faster pipes: red, then gold.
 ---
 Filter Pipe
 @items filter_pipe
@@ -52,7 +52,7 @@ Configure: click a machine side to set None, Input, Output or Both.
 
 Click a pipe arm to connect or disconnect it.
 
-Sneak + right-click picks up any Voltworks block.
+Sneak + right-click picks up any Voltworks block, or toggles Extract on the pipe plugged into that face.
 ---
 Power Tools
 @items electric_drill chainsaw advanced_drill charger

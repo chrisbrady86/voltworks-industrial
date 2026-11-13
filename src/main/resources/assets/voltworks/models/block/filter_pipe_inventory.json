@@ -1,4 +1,4 @@
-{ "parent": "minecraft:block/block", "textures": { "pipe": { "sprite": "voltworks:block/filter_pipe", "force_translucent": true }, "collar": "voltworks:block/item_pipe_extract", "particle": "voltworks:block/filter_pipe" },
+{ "parent": "minecraft:block/block", "textures": { "pipe": { "sprite": "voltworks:block/filter_pipe", "force_translucent": true }, "collar": "voltworks:block/item_pipe_extract", "cap": "voltworks:block/item_pipe_cap", "particle": "voltworks:block/filter_pipe" },
   "elements": [
     { "from": [0,5,5], "to": [16,11,11], "faces": {
       "north": {"uv":[0,5,16,11],"texture":"#pipe"}, "south": {"uv":[0,5,16,11],"texture":"#pipe"},

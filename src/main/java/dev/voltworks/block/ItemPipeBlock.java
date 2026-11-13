@@ -1,19 +1,30 @@
 package dev.voltworks.block;
 
+import dev.voltworks.Voltworks;
 import dev.voltworks.block.entity.ItemPipeBlockEntity;
 import dev.voltworks.block.entity.PoweredContainerBlockEntity;
 import dev.voltworks.block.entity.SideConfig;
+import java.util.ArrayDeque;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.Container;
+import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -72,9 +83,17 @@ public class ItemPipeBlock extends BaseEntityBlock {
 		}
 	}
 
+	/** What you bump into: the glass tube itself. */
 	private static final VoxelShape CORE = Block.box(5, 5, 5, 11, 11, 11);
 	private static final Map<Direction, VoxelShape> ARMS = Shapes.rotateAll(Block.boxZ(6, 0, 5));
+	/** What you click: a bit fatter than the tube, plus a stub where an arm was cut off, so it can be clicked to reconnect. */
+	private static final VoxelShape HIT_CORE = Block.box(4, 4, 4, 12, 12, 12);
+	private static final Map<Direction, VoxelShape> HIT_ARMS = Shapes.rotateAll(Block.boxZ(8, 0, 4));
+	private static final Map<Direction, VoxelShape> HIT_STUBS = Shapes.rotateAll(Block.boxZ(8, 2, 4));
+	/** Longest line {@link #lineTouchesInventory} follows. */
+	private static final int MAX_SCAN = 512;
 	private final Map<BlockState, VoxelShape> shapes = new HashMap<>();
+	private final Map<BlockState, VoxelShape> hitShapes = new HashMap<>();
 
 	public final Tier tier;
 
@@ -100,14 +119,77 @@ public class ItemPipeBlock extends BaseEntityBlock {
 		return state.hasBlockEntity() && level.getBlockEntity(pos) instanceof Container;
 	}
 
-	/** New connections to a machine side that only outputs default to EXTRACT, so outputs flow automatically. */
-	private static Side defaultFor(BlockGetter level, BlockPos neighbourPos, BlockState neighbourState, Direction dirToNeighbour) {
+	/**
+	 * How a new connection starts:
+	 * <ul>
+	 *   <li>a machine side that only outputs: EXTRACT, so outputs flow automatically;</li>
+	 *   <li>plain storage (a chest, barrel...) that is the first inventory on its line: EXTRACT, so laying pipes away
+	 *       from a chest just works. Once the line reaches another inventory, later chests are destinations;</li>
+	 *   <li>anything else: CONNECTED (items get delivered into it).</li>
+	 * </ul>
+	 * Sneak + Wrench on the arm switches Extract on or off afterwards.
+	 */
+	private static Side defaultFor(BlockGetter level, BlockPos pipePos, Direction dir) {
+		BlockPos neighbourPos = pipePos.relative(dir);
+		BlockState neighbourState = level.getBlockState(neighbourPos);
 		if (!canConnect(level, neighbourPos, neighbourState)) return Side.NONE;
 		if (level.getBlockEntity(neighbourPos) instanceof PoweredContainerBlockEntity machine) {
-			SideConfig.Mode mode = machine.getSideMode(dirToNeighbour.getOpposite());
+			SideConfig.Mode mode = machine.getSideMode(dir.getOpposite());
 			if (mode == SideConfig.Mode.OUTPUT) return Side.EXTRACT;
 		}
+		if (isPlainStorage(level, neighbourPos, neighbourState) && !lineTouchesInventory(level, pipePos, dir)) return Side.EXTRACT;
 		return Side.CONNECTED;
+	}
+
+	/**
+	 * Storage a new pipe may start pulling from: chests, barrels, hoppers, shulker boxes (other mods' too). Not Voltworks
+	 * blocks (machines handle their own outputs; a Storage Interface would empty the whole network) and not blocks with
+	 * per-side slots like furnaces.
+	 */
+	public static boolean isPlainStorage(BlockGetter level, BlockPos pos, BlockState state) {
+		if (state.getBlock() instanceof ItemPipeBlock) return false;
+		if (BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace().startsWith(Voltworks.MOD_ID)) return false;
+		BlockEntity be = level.getBlockEntity(pos);
+		if (!(be instanceof Container)) return false;
+		return !(be instanceof WorldlyContainer) || be instanceof ShulkerBoxBlockEntity;
+	}
+
+	/**
+	 * Whether the pipe line at {@code pipePos} already reaches an inventory, not counting the side {@code except}.
+	 * The pipe itself may not be placed yet: its neighbours are read from the world.
+	 */
+	static boolean lineTouchesInventory(BlockGetter level, BlockPos pipePos, Direction except) {
+		BlockState self = level.getBlockState(pipePos);
+		boolean placed = self.getBlock() instanceof ItemPipeBlock;
+		Set<BlockPos> seen = new HashSet<>();
+		seen.add(pipePos);
+		ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+		for (Direction d : Direction.values()) {
+			if (d == except || (placed && get(self, d) == Side.DISABLED)) continue;
+			BlockPos n = pipePos.relative(d);
+			BlockState ns = level.getBlockState(n);
+			if (ns.getBlock() instanceof ItemPipeBlock) {
+				if (get(ns, d.getOpposite()) != Side.DISABLED && seen.add(n)) queue.add(n);
+			} else if (canConnect(level, n, ns)) {
+				return true;
+			}
+		}
+		while (!queue.isEmpty() && seen.size() < MAX_SCAN) {
+			BlockPos p = queue.poll();
+			BlockState ps = level.getBlockState(p);
+			for (Direction d : Direction.values()) {
+				if (!get(ps, d).isOpen()) continue;
+				BlockPos n = p.relative(d);
+				if (n.equals(pipePos)) continue;
+				BlockState ns = level.getBlockState(n);
+				if (ns.getBlock() instanceof ItemPipeBlock) {
+					if (get(ns, d.getOpposite()).isOpen() && seen.add(n)) queue.add(n);
+				} else if (canConnect(level, n, ns)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -116,14 +198,28 @@ public class ItemPipeBlock extends BaseEntityBlock {
 		Level level = context.getLevel();
 		BlockPos pos = context.getClickedPos();
 		for (Direction d : Direction.values()) {
-			BlockPos n = pos.relative(d);
-			BlockState ns = level.getBlockState(n);
-			Side side = defaultFor(level, n, ns, d);
+			BlockState ns = level.getBlockState(pos.relative(d));
+			Side side = defaultFor(level, pos, d);
 			// Don't connect to a pipe that has deliberately cut itself off from this side
 			if (ns.getBlock() instanceof ItemPipeBlock && get(ns, d.getOpposite()) == Side.DISABLED) side = Side.DISABLED;
 			state = state.setValue(SIDES.get(d), side);
 		}
 		return state;
+	}
+
+	/** Tell the player when a new pipe started pulling from a chest by itself, and how to undo it. */
+	@Override
+	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity by, ItemStack stack) {
+		super.setPlacedBy(level, pos, state, by, stack);
+		if (level.isClientSide() || !(by instanceof Player player)) return;
+		for (Direction d : Direction.values()) {
+			BlockPos n = pos.relative(d);
+			BlockState ns = level.getBlockState(n);
+			if (get(state, d) == Side.EXTRACT && isPlainStorage(level, n, ns)) {
+				player.sendOverlayMessage(Component.translatable("message.voltworks.pipe.auto_extract", ns.getBlock().getName()));
+				return;
+			}
+		}
 	}
 
 	@Override
@@ -135,15 +231,30 @@ public class ItemPipeBlock extends BaseEntityBlock {
 		if (!connectable) {
 			next = Side.NONE;
 		} else if (current == Side.NONE) {
-			next = defaultFor(level, neighbourPos, neighbourState, direction);
+			next = defaultFor(level, pos, direction);
 		} else {
 			next = current; // keep CONNECTED / EXTRACT / DISABLED as configured
 		}
 		return state.setValue(SIDES.get(direction), next);
 	}
 
+	/** The click target: fatter than the tube, with stubs on cut-off sides. */
 	@Override
 	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+		return hitShapes.computeIfAbsent(state, s -> {
+			VoxelShape shape = HIT_CORE;
+			for (Direction d : Direction.values()) {
+				Side side = get(s, d);
+				if (side.isOpen()) shape = Shapes.or(shape, HIT_ARMS.get(d));
+				else if (side == Side.DISABLED) shape = Shapes.or(shape, HIT_STUBS.get(d));
+			}
+			return shape;
+		});
+	}
+
+	/** What entities bump into: just the tube. */
+	@Override
+	protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return shapes.computeIfAbsent(state, s -> {
 			VoxelShape shape = CORE;
 			for (Direction d : Direction.values()) {

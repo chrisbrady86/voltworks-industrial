@@ -1200,7 +1200,7 @@ public class GenAssets {
 		lang.put("block.voltworks.express_item_pipe", "Express Item Pipe");
 		lang.put("block.voltworks.filter_pipe", "Filter Pipe");
 		lang.put("tooltip.voltworks.pipe.machines", "Machines empty into chests automatically");
-		lang.put("tooltip.voltworks.pipe.chests", "To pull from a chest: sneak + right-click that pipe arm with a Wrench (Extract)");
+		lang.put("tooltip.voltworks.pipe.chests", "A pipe laid away from a chest pulls items out of it (striped collar). Sneak + Wrench the arm to switch");
 		lang.put("jei.voltworks.crafter.missing", "Not in storage (highlighted)");
 		lang.put("jei.voltworks.crafter.still_set", "The pattern is set anyway");
 		lang.put("jei.voltworks.cost", "%s J, %s s");
@@ -1216,6 +1216,7 @@ public class GenAssets {
 		lang.put("gui.voltworks.filter.allow.hint", "Only items in the filter pass. An empty filter lets everything through. Click to switch to Deny.");
 		lang.put("gui.voltworks.filter.deny.hint", "Items in the filter are blocked; everything else passes. Click to switch to Allow.");
 		lang.put("message.voltworks.pipe.extract_needs_inventory", "Only a pipe arm touching an inventory can extract");
+		lang.put("message.voltworks.pipe.auto_extract", "Pulling items out of the %s. Sneak + Wrench the arm to stop");
 		lang.put("item.voltworks.wrench", "Wrench");
 		lang.put("item.voltworks.guide", "Voltworks Guide");
 		lang.put("message.voltworks.wrench.rotate", "Wrench: Rotate mode");
@@ -1233,7 +1234,7 @@ public class GenAssets {
 		lang.put("tooltip.voltworks.wrench.configure", "Mode: Configure sides");
 		lang.put("tooltip.voltworks.wrench.hint1", "Right-click the air: switch Rotate / Configure mode");
 		lang.put("tooltip.voltworks.wrench.hint2", "Right-click a pipe arm: connect / disconnect");
-		lang.put("tooltip.voltworks.wrench.hint3", "Sneak + right-click: toggle Extract on a pipe arm, or pick up a Voltworks block");
+		lang.put("tooltip.voltworks.wrench.hint3", "Sneak + right-click: toggle Extract on a pipe arm (or the face it plugs into), or pick up a Voltworks block");
 		lang.put("tooltip.voltworks.chainsaw", "Fells the whole tree (sneak to cut one log)");
 		lang.put("block.voltworks.chunk_loader", "Chunk Loader");
 		lang.put("tooltip.voltworks.chunk_loader", "Keeps the 3x3 chunks around it running while you're away");
@@ -1285,6 +1286,12 @@ public class GenAssets {
 	 */
 	static void pipes() throws Exception {
 		png("block/item_pipe_extract", (x, y, r) -> ((x + y) / 2 % 2 == 0) ? rgb(235, 190, 40) : rgb(30, 30, 34));
+		// Cap on a side cut off with the wrench: a steel plug with a red bar, so you can see (and click) where the join was
+		png("block/item_pipe_cap", (x, y, r) -> {
+			if (x <= 5 || x >= 10 || y <= 5 || y >= 10) return rgb(70, 76, 88);
+			if (y == 7 || y == 8) return rgb(210, 52, 40);
+			return rgb(110, 118, 132);
+		});
 		pipe("item_pipe", rgb(176, 182, 192), false);
 		pipe("fast_item_pipe", rgb(196, 56, 44), false);
 		pipe("express_item_pipe", rgb(240, 192, 40), false);
@@ -1310,7 +1317,7 @@ public class GenAssets {
 			return argb(28, 210, 235, 245);                                                            // clear glass
 		});
 		String tex = "\"textures\": { \"pipe\": { \"sprite\": \"voltworks:block/" + name + "\", \"force_translucent\": true },"
-				+ " \"collar\": \"voltworks:block/item_pipe_extract\", \"particle\": \"voltworks:block/" + name + "\" }";
+				+ " \"collar\": \"voltworks:block/item_pipe_extract\", \"cap\": \"voltworks:block/item_pipe_cap\", \"particle\": \"voltworks:block/" + name + "\" }";
 		write("assets/voltworks/models/block/" + name + "_core.json", """
 			{ "ambientocclusion": false, %s,
 			  "elements": [ { "from": [5,5,5], "to": [11,11,11], "faces": {
@@ -1332,6 +1339,13 @@ public class GenAssets {
 			    "east": {"uv":[0,4,2,12],"texture":"#collar"}, "west": {"uv":[0,4,2,12],"texture":"#collar"},
 			    "up": {"uv":[4,0,12,2],"texture":"#collar"}, "down": {"uv":[4,0,12,2],"texture":"#collar"} } } ] }
 			""".formatted(tex));
+		write("assets/voltworks/models/block/" + name + "_cap.json", """
+			{ "ambientocclusion": false, %s,
+			  "elements": [ { "from": [5,5,4], "to": [11,11,5], "faces": {
+			    "north": {"uv":[5,5,11,11],"texture":"#cap"},
+			    "east": {"uv":[0,5,1,11],"texture":"#cap"}, "west": {"uv":[0,5,1,11],"texture":"#cap"},
+			    "up": {"uv":[5,0,11,1],"texture":"#cap"}, "down": {"uv":[5,0,11,1],"texture":"#cap"} } } ] }
+			""".formatted(tex));
 		write("assets/voltworks/models/block/" + name + "_inventory.json", """
 			{ "parent": "minecraft:block/block", %s,
 			  "elements": [
@@ -1351,6 +1365,7 @@ public class GenAssets {
 		for (String[] d : dirs) {
 			parts.add("{ \"when\": { " + q(d[0]) + ": \"connected|extract\" }, \"apply\": { \"model\": \"voltworks:block/" + name + "_side\"" + d[1] + " } }");
 			parts.add("{ \"when\": { " + q(d[0]) + ": \"extract\" }, \"apply\": { \"model\": \"voltworks:block/" + name + "_extract\"" + d[1] + " } }");
+			parts.add("{ \"when\": { " + q(d[0]) + ": \"disabled\" }, \"apply\": { \"model\": \"voltworks:block/" + name + "_cap\"" + d[1] + " } }");
 		}
 		write("assets/voltworks/blockstates/" + name + ".json", "{ \"multipart\": [\n  " + String.join(",\n  ", parts) + "\n] }");
 		itemDef(name, "voltworks:block/" + name + "_inventory");

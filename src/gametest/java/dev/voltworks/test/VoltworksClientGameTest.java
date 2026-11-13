@@ -52,6 +52,10 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.item.context.UseOnContext;
 
 /**
  * End-to-end test in a real singleplayer world: builds powered machine lines,
@@ -645,12 +649,11 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		BlockPos l = logisticsOrigin(o);
 		for (int x = -4; x <= 6; x++) for (int z = -2; z <= 29; z++) level.setBlockAndUpdate(l.offset(x, -1, z), Blocks.STONE.defaultBlockState());
 
-		// Row 1: chest -> chest across three pipes, first arm switched to extract with the wrench
+		// Row 1: chest -> chest across three pipes, laid from the source: the first arm starts extracting by itself
 		level.setBlockAndUpdate(l, Blocks.CHEST.defaultBlockState());
 		level.setBlockAndUpdate(l.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
 		for (int x = 1; x <= 3; x++) placePipe(level, l.offset(x, 0, 0));
 		put(level, l, 0, Items.RAW_IRON, 16);
-		WrenchItem.toggleExtract(level, l.offset(1, 0, 0), Direction.WEST); // sneak-click: extract
 
 		// Row 2: a powered crusher whose east side is configured as Output; the pipe placed there starts extracting
 		BlockPos crusher = l.offset(2, 0, 3);
@@ -671,7 +674,6 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		level.setBlockAndUpdate(c.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
 		for (int x = 1; x <= 3; x++) placePipe(level, c.offset(x, 0, 0));
 		put(level, c, 0, Items.COBBLESTONE, 8);
-		WrenchItem.toggleExtract(level, c.offset(1, 0, 0), Direction.WEST); // sneak-click: extract
 		WrenchItem.togglePipe(level, c.offset(2, 0, 0), Direction.EAST); // click: disconnect the two pipes
 
 		// Row 4: wrench rotation and pick-up targets
@@ -702,17 +704,18 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		((FilterPipeBlockEntity) level.getBlockEntity(l.offset(3, 0, 15))).setFilter(0, new ItemStack(Items.RAW_IRON));
 		put(level, s, 0, Items.RAW_IRON, 8);
 		put(level, s, 1, Items.COBBLESTONE, 8);
-		WrenchItem.toggleExtract(level, l.offset(1, 0, 15), Direction.WEST);
 
-		// Rows 9-10: chest -> pipe -> pipe -> crusher; z=24 with the chest arm set to Extract, z=26 left plain
+		// Rows 9-10: chest -> pipe -> pipe -> crusher. z=24 laid from the chest (its arm starts extracting);
+		// z=26 laid from the crusher, chest added last: the line already reaches the crusher, so the chest is a destination
 		for (int z : new int[]{24, 26}) {
 			BlockPos chest = l.offset(0, 0, z);
-			level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
+			if (z == 24) level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
 			place(level, chest.offset(3, 0, 0), ModBlocks.CRUSHER);
-			placePipe(level, chest.offset(1, 0, 0));
-			placePipe(level, chest.offset(2, 0, 0));
+			int first = z == 24 ? 1 : 2;
+			placePipe(level, chest.offset(first, 0, 0));
+			placePipe(level, chest.offset(3 - first, 0, 0));
+			if (z == 26) level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
 			put(level, chest, 0, Items.RAW_IRON, 8);
-			if (z == 24) WrenchItem.toggleExtract(level, chest.offset(1, 0, 0), Direction.WEST);
 		}
 
 		// Rows 7-8: the same 3-pipe line in basic and express pipes, 256 cobblestone each
@@ -724,7 +727,6 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			level.setBlockAndUpdate(src.offset(4, 0, 0), Blocks.CHEST.defaultBlockState());
 			for (int x = 1; x <= 3; x++) placePipe(level, src.offset(x, 0, 0), row[1] == 2 && x > 1 ? ModBlocks.ITEM_PIPE : pipe);
 			for (int slot = 0; slot < 4; slot++) put(level, src, slot, Items.COBBLESTONE, 64);
-			WrenchItem.toggleExtract(level, src.offset(1, 0, 0), Direction.WEST);
 		}
 	}
 
@@ -733,7 +735,10 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 
 		// Row 1
 		if (ItemPipeBlock.get(level.getBlockState(l.offset(1, 0, 0)), Direction.WEST) != ItemPipeBlock.Side.EXTRACT) {
-			fails.add("Wrench should switch the pipe arm at the source chest to extract");
+			fails.add("The first pipe laid from a chest should start extracting from it");
+		}
+		if (ItemPipeBlock.get(level.getBlockState(l.offset(3, 0, 0)), Direction.EAST) != ItemPipeBlock.Side.CONNECTED) {
+			fails.add("A chest at the far end of a line that already reaches a chest should be a destination, not extracted");
 		}
 		expect(fails, level, l.offset(4, 0, 0), 0, Items.RAW_IRON, 16, "Item Pipe: 16 raw iron moved chest -> chest");
 		if (!((Container) level.getBlockEntity(l)).isEmpty()) fails.add("Item Pipe should have emptied the source chest");
@@ -747,6 +752,18 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		expect(fails, level, l.offset(4, 0, 3), 0, ModItems.IRON_DUST, 4, "Item Pipe: crusher output (4 iron dust) piped into a chest");
 		ItemStack crusherOut = ((Container) level.getBlockEntity(crusher)).getItem(1);
 		if (!crusherOut.isEmpty()) fails.add("Pipe should have emptied the crusher's output (left " + crusherOut + ")");
+		// Sneak + wrench on the crusher's face where the pipe plugs in toggles that arm, and must not pick the crusher up
+		ServerPlayer sneaker = server.getPlayerList().getPlayers().get(0);
+		ItemStack held = sneaker.getMainHandItem().copy();
+		sneaker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.WRENCH));
+		sneaker.setShiftKeyDown(true);
+		Vec3 faceHit = Vec3.atCenterOf(crusher).add(0.5, 0.35, 0.35); // east face, off to the corner beside the pipe arm
+		ModItems.WRENCH.useOn(new UseOnContext(sneaker, InteractionHand.MAIN_HAND, new BlockHitResult(faceHit, Direction.EAST, crusher, false)));
+		sneaker.setShiftKeyDown(false);
+		sneaker.setItemInHand(InteractionHand.MAIN_HAND, held);
+		ItemPipeBlock.Side afterSneak = ItemPipeBlock.get(level.getBlockState(l.offset(3, 0, 3)), Direction.WEST);
+		if (!level.getBlockState(crusher).is(ModBlocks.CRUSHER)) fails.add("Sneak-wrenching a machine face with a pipe on it must not pick the machine up");
+		if (afterSneak != ItemPipeBlock.Side.CONNECTED) fails.add("Sneak-wrenching the face a pipe plugs into should toggle that arm's Extract (is " + afterSneak + ")");
 
 		// Row 3
 		BlockPos c = l.offset(0, 0, 6);
@@ -755,6 +772,9 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		}
 		if (!((Container) level.getBlockEntity(c.offset(4, 0, 0))).isEmpty()) fails.add("Items must not cross a disabled pipe join");
 		expect(fails, level, c, 0, Items.COBBLESTONE, 8, "Disabled join: source chest keeps its 8 cobblestone");
+		// The cut-off side keeps a clickable stub, so it can be clicked again to reconnect
+		AABB cutBox = level.getBlockState(c.offset(3, 0, 0)).getShape(level, c.offset(3, 0, 0)).bounds();
+		if (cutBox.minX > 3 / 16.0) fails.add("A cut-off pipe arm should keep a click target on that side (shape starts at x=" + cutBox.minX + ")");
 
 		// Row 4: rotate and pick up
 		BlockPos gen = l.offset(0, 0, 9);
@@ -797,8 +817,8 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		}
 
 		// Rows 9-10: chest feeding a crusher (unpowered, so the raw iron waits in its input slot)
-		expect(fails, level, l.offset(3, 0, 24), 0, Items.RAW_IRON, 8, "Chest (arm on Extract) -> pipes -> crusher input: 8 raw iron");
-		expect(fails, level, l.offset(0, 0, 26), 0, Items.RAW_IRON, 8, "Chest with a plain (not Extract) arm keeps its 8 raw iron");
+		expect(fails, level, l.offset(3, 0, 24), 0, Items.RAW_IRON, 8, "Line laid from a chest -> pipes -> crusher input: 8 raw iron");
+		expect(fails, level, l.offset(0, 0, 26), 0, Items.RAW_IRON, 8, "Chest added to a line that reaches a machine keeps its 8 raw iron");
 
 		// Rows 7-8: tiers. Basic (4/s) is still busy with 256 items; express (64/s) has finished.
 		int mixedMoved = count((Container) level.getBlockEntity(l.offset(4, 0, 28)), Items.COBBLESTONE);

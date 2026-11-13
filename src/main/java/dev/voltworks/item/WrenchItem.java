@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
  *   <li>Rotate mode, right-click a block: turn it (machines face the side you clicked).</li>
  *   <li>Configure mode, right-click a machine side: cycle that side through none / input / output / both.</li>
  *   <li>Right-click a pipe arm (either mode): connect or disconnect it. Joins between two pipes change on both.</li>
- *   <li>Sneak + right-click a pipe arm touching an inventory: toggle Extract (pull items out of it).</li>
+ *   <li>Sneak + right-click a pipe arm touching an inventory, or the face of the inventory it plugs into: toggle Extract.</li>
  *   <li>Sneak + right-click any other Voltworks block: pick it up into your inventory.</li>
  * </ul>
  */
@@ -74,7 +74,16 @@ public class WrenchItem extends Item {
 			Direction side = pipeSideAt(context.getClickLocation(), pos, context.getClickedFace());
 			message = player.isSecondaryUseActive() ? toggleExtract(level, pos, side) : togglePipe(level, pos, side);
 		} else if (player.isSecondaryUseActive()) {
-			message = dismantle(level, pos, player) ? null : Component.translatable("message.voltworks.wrench.cant_pick_up");
+			// Sneak-clicking the face a pipe is plugged into (a near miss of the pipe arm) toggles that arm's Extract
+			// instead of picking up the machine or chest behind it.
+			Direction face = context.getClickedFace();
+			BlockPos pipePos = pos.relative(face);
+			BlockState pipe = level.getBlockState(pipePos);
+			if (pipe.getBlock() instanceof ItemPipeBlock && ItemPipeBlock.get(pipe, face.getOpposite()).isOpen()) {
+				message = toggleExtract(level, pipePos, face.getOpposite());
+			} else {
+				message = dismantle(level, pos, player) ? null : Component.translatable("message.voltworks.wrench.cant_pick_up");
+			}
 		} else if (isConfigureMode(context.getItemInHand())) {
 			message = configure(level, pos, context.getClickedFace());
 		} else {

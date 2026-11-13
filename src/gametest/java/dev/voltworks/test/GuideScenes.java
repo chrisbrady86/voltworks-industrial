@@ -125,7 +125,7 @@ final class GuideScenes {
 		put(level, s.offset(-5, 0, 0), 0, ModItems.RAW_URANIUM, 64);
 	}
 
-	// Front: chest -> extract pipe -> pipes -> Filter Pipe -> chest. Behind: a Crusher emptied by fast pipes into a chest.
+	// Front: chest -> pipes (the first one extracts by itself) -> Filter Pipe -> chest. Behind: a Crusher emptied by fast pipes into a chest.
 	private static void buildPipes(ServerLevel level, BlockPos s) {
 		level.setBlockAndUpdate(s, Blocks.CHEST.defaultBlockState());
 		level.setBlockAndUpdate(s.offset(-6, 0, 0), Blocks.CHEST.defaultBlockState());
@@ -133,7 +133,6 @@ final class GuideScenes {
 		pipe(level, s.offset(-5, 0, 0), ModBlocks.FILTER_PIPE);
 		((FilterPipeBlockEntity) level.getBlockEntity(s.offset(-5, 0, 0))).setFilter(0, new ItemStack(Items.RAW_IRON));
 		for (int slot = 0; slot < 6; slot++) put(level, s, slot, Items.RAW_IRON, 64);
-		WrenchItem.toggleExtract(level, s.offset(-1, 0, 0), Direction.EAST);
 
 		place(level, s.offset(0, 0, 3), ModBlocks.GENERATOR);
 		place(level, s.offset(-1, 0, 3), ModBlocks.COPPER_CABLE);
