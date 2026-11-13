@@ -185,9 +185,11 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		put(level, o.offset(0, 0, 7), 0, Items.COAL, 4);
 		put(level, o.offset(2, 0, 6), 0, Items.RAW_IRON, 2);          // -> 4 dust, ejected into the furnace -> 4 ingots
 		put(level, o.offset(2, 0, 6), 2, ModItems.EJECTOR_UPGRADE, 1);
-		put(level, o.offset(2, 0, 7), 2, ModItems.CAPACITY_UPGRADE, 2);
+		put(level, o.offset(2, 0, 7), 2, ModItems.CAPACITY_UPGRADE, 1);
+		put(level, o.offset(2, 0, 7), 3, ModItems.CAPACITY_UPGRADE, 1);
 		put(level, o.offset(1, 0, 8), 0, Items.RAW_GOLD, 4);          // 2 speed upgrades: 98 ticks each -> 8 dust
-		put(level, o.offset(1, 0, 8), 2, ModItems.SPEED_UPGRADE, 2);
+		put(level, o.offset(1, 0, 8), 2, ModItems.SPEED_UPGRADE, 1);
+		put(level, o.offset(1, 0, 8), 3, ModItems.SPEED_UPGRADE, 1);
 
 		// Reactors. A (safe): 2 rods + 3 vents, redstone on, feeding a Battery Box.
 		BlockPos safe = o.offset(12, 0, 4);

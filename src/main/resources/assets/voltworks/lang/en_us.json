@@ -54,7 +54,7 @@
   "tooltip.voltworks.upgrade.speed": "Each: 30% faster, uses 60% more power per tick",
   "tooltip.voltworks.upgrade.capacity": "Each: +4,000 J internal storage",
   "tooltip.voltworks.upgrade.ejector": "Pushes finished items into adjacent inventories and machines",
-  "tooltip.voltworks.upgrade.hint": "Place in a machine's upgrade slots (up to 4 per slot)",
+  "tooltip.voltworks.upgrade.hint": "Place in a machine's upgrade slots (one per slot)",
   "block.voltworks.uranium_ore": "Uranium Ore",
   "block.voltworks.deepslate_uranium_ore": "Deepslate Uranium Ore",
   "block.voltworks.uranium_block": "Block of Uranium",

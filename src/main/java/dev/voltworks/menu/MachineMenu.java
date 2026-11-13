@@ -158,9 +158,9 @@ public class MachineMenu extends AbstractContainerMenu {
 		}
 	}
 
-	/** Holds up to 4 upgrade items. */
+	/** Holds one upgrade item (upgrades don't stack). */
 	public static class UpgradeSlot extends Slot {
-		public static final int MAX_PER_SLOT = 4;
+		public static final int MAX_PER_SLOT = 1;
 
 		UpgradeSlot(Container container, int index, int x, int y) {
 			super(container, index, x, y);

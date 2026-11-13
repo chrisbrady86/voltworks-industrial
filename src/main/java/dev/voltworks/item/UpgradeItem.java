@@ -22,7 +22,7 @@ public class UpgradeItem extends Item {
 	public final Type type;
 
 	public UpgradeItem(Properties properties, Type type) {
-		super(properties.stacksTo(16));
+		super(properties.stacksTo(1));
 		this.type = type;
 	}
 
