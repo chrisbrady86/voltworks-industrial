@@ -34,6 +34,7 @@ public class GenAssets {
 		logistics();
 		refining();
 		computers();
+		chunkLoader();
 		System.out.println("done");
 	}
 
@@ -947,7 +948,9 @@ public class GenAssets {
 			  "tooltip.voltworks.depleted_fuel_rod": "Crush it to recover the lead",
 			  "tooltip.voltworks.heat_vent": "Cools the reactor; works better next to fuel rods",
 			  "gui.voltworks.heat": "Heat: %s / %s",
-			  "message.voltworks.reactor": "Reactor: %s J/t, heat %s%%"
+			  "message.voltworks.reactor": "Reactor: %s J/t, heat %s%%",
+			  "message.voltworks.reactor_shutdown": "Reactor: emergency shutdown at %s%% heat, restarts below 90%%",
+			  "gamerule.voltworks.reactor_meltdown": "Voltworks: reactor meltdown (destructive, contained or off)"
 			}
 			""");
 	}
@@ -1070,7 +1073,7 @@ public class GenAssets {
 	static final List<String> BLOCKS = List.of("generator", "crusher", "electric_furnace", "battery_box", "solar_panel", "copper_cable", "machine_frame",
 			"advanced_machine_frame", "alloy_smelter", "industrial_crusher", "induction_furnace", "thermal_generator", "charger", "reactor_chamber", "item_pipe",
 			"fast_item_pipe", "express_item_pipe", "filter_pipe", "small_battery", "large_battery", "huge_battery", "uranium_refiner",
-			"data_cable", "drive_rack", "storage_terminal", "computer_crafter", "storage_interface");
+			"data_cable", "drive_rack", "storage_terminal", "computer_crafter", "storage_interface", "chunk_loader");
 
 	static void data() throws Exception {
 		for (String b : BLOCKS) {
@@ -1232,10 +1235,19 @@ public class GenAssets {
 		lang.put("tooltip.voltworks.wrench.hint2", "Right-click a pipe arm: connect / disconnect");
 		lang.put("tooltip.voltworks.wrench.hint3", "Sneak + right-click: toggle Extract on a pipe arm, or pick up a Voltworks block");
 		lang.put("tooltip.voltworks.chainsaw", "Fells the whole tree (sneak to cut one log)");
+		lang.put("block.voltworks.chunk_loader", "Chunk Loader");
+		lang.put("tooltip.voltworks.chunk_loader", "Keeps the 3x3 chunks around it running while you're away");
+		lang.put("tooltip.voltworks.chunk_loader.redstone", "A redstone signal switches it off");
+		lang.put("message.voltworks.chunk_loader.on", "Chunk Loader: keeping chunks %s,%s to %s,%s loaded");
+		lang.put("message.voltworks.chunk_loader.off", "Chunk Loader: off (redstone signal)");
 		for (String m : List.of("none", "input", "output", "both")) lang.put("side_mode.voltworks." + m, Character.toUpperCase(m.charAt(0)) + m.substring(1));
 		for (String sd : List.of("front", "back", "left", "right", "top", "bottom")) lang.put("side.voltworks." + sd, Character.toUpperCase(sd.charAt(0)) + sd.substring(1));
 
-		// Guide pages: tools/guide.txt, pages separated by a line containing only "---"
+		lang.put("gui.voltworks.guide.title", "Voltworks Guide");
+		lang.put("gui.voltworks.guide.contents", "Contents");
+		lang.put("gui.voltworks.guide.intro", "From your first generator to a nuclear reactor. Pick a topic:");
+		// Guide pages: tools/guide.txt, pages separated by a line containing only "---".
+		// A page starts with its title; "@image name" and "@items id ..." lines add a picture and item icons (see GuideScreen)
 		Path guide = res.toAbsolutePath().getParent().getParent().getParent().resolve("tools/guide.txt");
 		String[] pages = Files.readString(guide).replace("\r\n", "\n").strip().split("\n---\n");
 		for (int i = 0; i < pages.length; i++) lang.put("guide.voltworks.page." + (i + 1), pages[i].strip());
@@ -1515,5 +1527,30 @@ public class GenAssets {
 				"D", "minecraft:diamond");
 		shaped("huge_hard_drive", 1, new String[]{"SCS", "CNC", "SCS"}, "S", "voltworks:steel_ingot", "C", "voltworks:silicon_chip",
 				"N", "minecraft:netherite_scrap");
+	}
+	// ---------------- chunk loader ----------------
+	/** Tier-2 casing with an ender core in the middle of every face: dim when off, glowing teal when on. */
+	static void chunkLoader() throws Exception {
+		for (boolean on : new boolean[]{false, true}) {
+			png("block/chunk_loader" + (on ? "_on" : ""), (x, y, r) -> {
+				double d = Math.hypot(x - 7.5, y - 7.5);
+				if (d < 2.2) return on ? rgb(200, 255, 235) : rgb(40, 70, 64);
+				if (d < 3.6) return on ? rgb(40 + r.nextInt(30), 200 + r.nextInt(40), 170) : rgb(24, 52, 48);
+				if (d < 4.6) return rgb(30, 34, 40);
+				if (inRect(x, y, 3, 3, 12, 12)) return rgb(54, 58, 66);
+				return casing2(x, y, r);
+			});
+			write("assets/voltworks/models/block/chunk_loader" + (on ? "_on" : "") + ".json",
+					"{ \"parent\": \"minecraft:block/cube_all\", \"textures\": { \"all\": \"voltworks:block/chunk_loader" + (on ? "_on" : "") + "\" } }");
+		}
+		write("assets/voltworks/blockstates/chunk_loader.json", """
+			{ "variants": {
+			  "enabled=false": { "model": "voltworks:block/chunk_loader" },
+			  "enabled=true": { "model": "voltworks:block/chunk_loader_on" } } }
+			""");
+		itemDef("chunk_loader", "voltworks:block/chunk_loader_on");
+		// Ender pearls tie it to far-away places; circuits and steel make it a tier-2 machine.
+		shaped("chunk_loader", 1, new String[]{"SES", "CAC", "SES"}, "S", "voltworks:steel_ingot", "E", "minecraft:ender_pearl",
+				"C", "voltworks:circuit", "A", "voltworks:advanced_machine_frame");
 	}
 }

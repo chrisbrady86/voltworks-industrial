@@ -3,6 +3,7 @@ package dev.voltworks.block.entity;
 import dev.voltworks.item.FuelRodItem;
 import dev.voltworks.menu.MachineMenu;
 import dev.voltworks.registry.ModBlockEntities;
+import dev.voltworks.registry.ModGameRules;
 import dev.voltworks.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,7 +29,8 @@ import org.jspecify.annotations.Nullable;
  *       Each pulse makes {@value #POWER_PER_PULSE} J and {@value #HEAT_PER_PULSE} heat per tick.</li>
  *   <li>Each heat vent removes {@value #VENT_BASE} heat per tick, plus {@value #VENT_PER_ROD} for every rod beside it.</li>
  *   <li>Every water source block touching the reactor removes {@value #WATER_COOLING} heat per tick.</li>
- *   <li>At {@value #MAX_HEAT} heat it melts down and explodes.</li>
+ *   <li>At {@value #MAX_HEAT} heat it melts down and explodes. The {@code voltworks:reactor_meltdown} gamerule can make
+ *       the blast spare blocks ({@code contained}) or replace it with an emergency shutdown ({@code off}).</li>
  * </ul>
  * A comparator reads the heat level (0-15), so you can build an automatic shutdown.
  */
@@ -43,7 +45,11 @@ public class ReactorBlockEntity extends PoweredContainerBlockEntity implements S
 	public static final int PASSIVE_COOLING = 1;
 	public static final float MELTDOWN_POWER = 12.0F; // TNT is 4, a charged creeper 6
 	public static final int MAX_PUSH = 512;
+	/** With meltdowns off, a shut-down reactor restarts once it has cooled below this heat. */
+	public static final int SHUTDOWN_RESTART = MAX_HEAT * 9 / 10;
 	private static final int[] ALL_SLOTS = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+	/** Not saved: a reloaded reactor at 100% heat simply shuts down again on its first tick. */
+	private boolean shutDown;
 
 	public ReactorBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.REACTOR, pos, state, SIZE * SIZE, 30_000);
@@ -80,7 +86,12 @@ public class ReactorBlockEntity extends PoweredContainerBlockEntity implements S
 
 	@Override
 	public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
-		boolean enabled = level.hasNeighborSignal(pos) && energy < getCapacity();
+		ModGameRules.Meltdown mode = level.getGameRules().get(ModGameRules.REACTOR_MELTDOWN);
+		// With meltdowns off, a reactor that hits 100% heat shuts down until it has cooled to 90%.
+		if (mode != ModGameRules.Meltdown.off || progress < SHUTDOWN_RESTART) {
+			shutDown = false;
+		}
+		boolean enabled = !shutDown && level.hasNeighborSignal(pos) && energy < getCapacity();
 		int output = 0, heatIn = 0, cooling = PASSIVE_COOLING;
 
 		// Work out this tick's numbers before changing any rods.
@@ -124,18 +135,30 @@ public class ReactorBlockEntity extends PoweredContainerBlockEntity implements S
 		pushEnergy(level, pos, MAX_PUSH, true);
 		setActive(level, pos, state, enabled && output > 0);
 
-		if (heat >= MAX_HEAT) {
-			meltdown(level, pos);
-		} else if (heat > MAX_HEAT * 7 / 10 && level.getGameTime() % 10 == 0) {
+		if (heat >= MAX_HEAT && mode == ModGameRules.Meltdown.off) {
+			progress = MAX_HEAT;
+			shutDown = true;
+		} else if (heat >= MAX_HEAT) {
+			meltdown(level, pos, mode == ModGameRules.Meltdown.destructive);
+			return;
+		}
+		if (heat > MAX_HEAT * 7 / 10 && level.getGameTime() % 10 == 0) {
 			// Warning signs: smoke pours out when it's running hot.
 			level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, 4, 0.3, 0.1, 0.3, 0.02);
 		}
 	}
 
-	private void meltdown(ServerLevel level, BlockPos pos) {
+	/** {@code destructive}: blocks break and fires start. Otherwise the blast only hurts entities (gamerule {@code contained}). */
+	private void meltdown(ServerLevel level, BlockPos pos, boolean destructive) {
 		items.clear(); // the fuel is consumed in the blast, nothing drops
 		level.removeBlock(pos, false);
-		level.explode(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, MELTDOWN_POWER, true, Level.ExplosionInteraction.BLOCK);
+		level.explode(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, MELTDOWN_POWER, destructive,
+				destructive ? Level.ExplosionInteraction.BLOCK : Level.ExplosionInteraction.NONE);
+	}
+
+	/** True while a reactor is shut down after reaching 100% heat (only with meltdowns off). */
+	public boolean isShutDown() {
+		return shutDown;
 	}
 
 	/** Comparator output: 0 when cold, 15 at meltdown. */
@@ -145,6 +168,7 @@ public class ReactorBlockEntity extends PoweredContainerBlockEntity implements S
 
 	@Override
 	public Component getStatus() {
+		if (shutDown) return Component.translatable("message.voltworks.reactor_shutdown", Math.round(100.0F * progress / MAX_HEAT));
 		return Component.translatable("message.voltworks.reactor", progress2, Math.round(100.0F * progress / MAX_HEAT));
 	}
 

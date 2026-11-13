@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["SES", "CAC", "SES"],
+  "key": { "S": "voltworks:steel_ingot", "E": "minecraft:ender_pearl", "C": "voltworks:circuit", "A": "voltworks:advanced_machine_frame" },
+  "result": { "id": "voltworks:chunk_loader", "count": 1 } }

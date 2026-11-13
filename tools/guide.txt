@@ -1,170 +1,103 @@
-Voltworks Guide
+Getting Started
+@items generator copper_cable crusher electric_furnace wrench
+Place a Generator, feed it coal and run Copper Cable to a machine.
 
-Power, cables and machines, from your first generator to a nuclear reactor.
-
+Hover over any Voltworks item to see what it does. With JEI installed, every recipe and machine is listed there.
 ---
 Power
+@image power
+@items generator solar_panel thermal_generator copper_cable battery_box
+Generators burn fuel, Solar Panels need daylight, Thermal Generators sit next to lava.
 
-Generator: burns furnace fuel, 10 J/t. One coal = 4,000 J.
-
-Solar Panel: 1 J/t in daylight under open sky.
-
-Thermal Generator: 5 J/t per lava source touching it.
----
-Cables & Batteries
-
-Copper Cable carries power between blocks.
-
-Power goes to machines first, then to batteries. The front gauge shows the charge.
----
-Batteries
-
-Small: 40,000 J
-Medium: 100,000 J
-Large: 1,000,000 J
-Huge: 10,000,000 J
-
-Bigger batteries also charge and discharge faster.
+Machines get power first; batteries store the rest. Bigger batteries hold more and charge faster.
 ---
 Machines
+@image machines
+@items crusher electric_furnace alloy_smelter industrial_crusher induction_furnace
+Crusher: one ore makes two dust, so two ingots.
 
-Crusher: ore into 2 dust.
-Electric Furnace: smelts with power.
-Alloy Smelter: iron + 2 coal into steel.
+Alloy Smelter: Steel and Silicon.
 
-Steel makes Circuits and the Advanced Machine Frame.
+Industrial Crusher and Induction Furnace: faster tier 2.
 ---
-Tier 2
+Upgrades
+@items speed_upgrade capacity_upgrade ejector_upgrade
+Every machine has 3 upgrade slots.
 
-Industrial Crusher: 3 dust per ore, 4x speed.
-
-Induction Furnace: two lanes, 4x speed.
-
-Upgrades (3 slots): Speed, Capacity, Ejector.
----
-Item Pipes
-
-Glass pipes join chests, hoppers and machines. You can watch items travel.
-
-Machine to chest just works: pipes pull finished items out of machines into chests.
+Speed: works faster, uses more power.
+Capacity: stores more power.
+Ejector: pushes finished items into the next machine or chest.
 ---
 Item Pipes
+@image pipes
+@items item_pipe fast_item_pipe express_item_pipe filter_pipe wrench
+Pipes empty machines into chests by themselves.
 
-To pull from a chest, sneak + right-click that pipe arm with the wrench: Extract (striped collar).
-
-Right-click an arm with the wrench to connect or disconnect it.
----
-Pipe Tiers
-
-Item Pipe: 4 items/s.
-Fast (red): 16 items/s.
-Express (gold): 64 items/s, near instant.
-
-A line runs at the speed of its slowest pipe.
+To pull from a chest, sneak + right-click the pipe arm with the Wrench. Faster pipes: red, then gold.
 ---
 Filter Pipe
-
-Right-click it to set up to 9 items.
+@items filter_pipe
+Right-click it to choose up to 9 items.
 
 Allow: only those pass.
 Deny: those are blocked.
 
-Put one in front of a chest to sort into it.
+Put one in front of a chest to sort items into it.
 ---
 Wrench
+@items wrench
+Right-click the air to switch between Rotate and Configure.
 
-Right-click the air to switch Rotate / Configure.
+Configure: click a machine side to set None, Input, Output or Both.
 
-Rotate: turn machines to face the side you click.
+Click a pipe arm to connect or disconnect it.
 
-Sneak + right-click to pick up a Voltworks block.
+Sneak + right-click picks up any Voltworks block.
 ---
-Side Config
+Power Tools
+@items electric_drill chainsaw advanced_drill charger
+Tools run on energy and never break. Recharge them in the Charger.
 
-In Configure mode, right-click a machine side to cycle it:
-
-None, Input, Output, Both.
-
-Settings follow the machine when you rotate it.
----
-Tools
-
-Electric Drill, Chainsaw and Advanced Drill run on energy.
-
-Recharge them in the Charger.
+Chainsaw: fells the whole tree. Sneak to cut one log.
 
 Advanced Drill: sneak + right-click for 3x3 mining.
 ---
-Chainsaw
+Chunk Loader
+@items chunk_loader
+Chunks only run while a player is near. A Chunk Loader keeps the 3x3 chunks around it running while you're away, so machines, quarries and reactors keep working.
 
-Cut one log and the whole tree comes down, as long as it has natural leaves.
+Right-click it to see which chunks. A redstone signal switches it off.
+---
+Ores
+@items tin_ore lead_ore uranium_ore raw_tin raw_lead raw_uranium
+Tin is found at mid depth, Lead deep down and Uranium deepest of all.
 
-Each log costs power as usual.
-
-Sneak to cut a single log.
+Uranium can't be smelted or crushed: enrich it in the Uranium Refiner.
 ---
 Uranium
+@items uranium_refiner refined_uranium fuel_rod depleted_fuel_rod
+The Uranium Refiner turns Raw Uranium into Refined Uranium for Fuel Rods.
 
-Uranium can't be smelted or crushed.
-
-The Uranium Refiner enriches Raw Uranium into Refined Uranium. It needs lots of power.
-
-Fuel Rods are made from Refined Uranium.
----
-Reprocessing
-
-Put a spent Fuel Rod in the Uranium Refiner to get one Refined Uranium back.
-
-Or crush it to recover its lead.
+Spent rods go back into the Refiner for more uranium, or into a Crusher for their lead.
 ---
 Reactor
+@image reactor
+@items reactor_chamber fuel_rod heat_vent lead_block
+Fill the grid with Fuel Rods and Heat Vents and give it redstone. Rods side by side: more power, far more heat.
 
-3x3 grid of Fuel Rods and Heat Vents. Needs redstone. Pauses when its buffer is full.
-
-Rods side by side make more power and much more heat.
-
-Keep heat below 100% or it melts down! A comparator reads heat.
+At 100% heat it melts down! Two layers of Lead Blocks contain the blast.
 ---
 Computer Storage
+@image storage
+@items drive_rack small_hard_drive data_cable storage_terminal computer_crafter
+Put Hard Drives in a powered Drive Rack and link it with Data Cable.
 
-Smelt 2 sand + coal in the Alloy Smelter for Silicon, then craft Silicon Chips.
-
-Hard Drives hold items: 1K, 4K, 16K or 64K, up to 63 kinds each.
----
-Drive Rack
-
-Holds 8 Hard Drives. Needs power: 1 J/t plus 1 per drive.
-
-Link racks, terminals and crafters with Data Cable (or let them touch).
----
-Storage Terminal
-
-See and search everything stored.
-
-Click: take a stack.
-Right-click: half.
-Shift-click: to inventory.
-
-Click holding an item to store it.
----
-Computer Crafter
-
-Click list items to fill the 3x3 pattern, then press x1, x8 or x64.
-
-Ingredients come from storage; results go back into it.
-
-More space: add drives or racks.
+Storage Terminal: search, take and store. Computer Crafter: crafts straight from storage.
 ---
 Storage Interface
-
+@items storage_interface filter_pipe item_pipe
 Lets item pipes reach your storage.
 
-Extract arm (sneak + wrench) on it: pulls items out. Use a Filter Pipe to pick which.
+A plain arm puts items in. An Extract arm pulls them out; add a Filter Pipe to choose which.
 
-Plain arm: puts items in. Machines empty into it.
----
-Example
-
-Interface -> Filter Pipe (Raw Tin) -> pipe -> Crusher.
-
-A second pipe from the Crusher back to the Interface stores the dust.
+Example: Interface, Filter (Raw Tin), Crusher, and a pipe back for the dust.

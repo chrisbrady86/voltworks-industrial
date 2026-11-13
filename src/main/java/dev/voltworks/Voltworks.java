@@ -11,6 +11,7 @@ import dev.voltworks.registry.ModBlockEntities;
 import dev.voltworks.registry.ModBlocks;
 import dev.voltworks.registry.ModComponents;
 import dev.voltworks.registry.ModItems;
+import dev.voltworks.registry.ModGameRules;
 import dev.voltworks.registry.ModMenus;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
@@ -39,6 +40,7 @@ public class Voltworks implements ModInitializer {
 		ModBlocks.init();
 		ModBlockEntities.init();
 		ModMenus.init();
+		ModGameRules.init();
 		// Storage terminal / crafter networking: the item list goes to the client, clicks in it come back
 		PayloadTypeRegistry.clientboundPlay().register(StorageViewPayload.TYPE, StorageViewPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(StorageActionPayload.TYPE, StorageActionPayload.CODEC);
@@ -106,6 +108,7 @@ public class Voltworks implements ModInitializer {
 					out.accept(ModBlocks.LEAD_BLOCK);
 					out.accept(ModBlocks.STEEL_BLOCK);
 					out.accept(ModBlocks.CHARGER);
+					out.accept(ModBlocks.CHUNK_LOADER);
 					out.accept(ModItems.POWER_CELL);
 					out.accept(ModItems.ELECTRIC_DRILL);
 					out.accept(ModItems.CHAINSAW);

@@ -1,5 +1,7 @@
 package dev.voltworks.registry;
 
+import dev.voltworks.block.ChunkLoaderBlock;
+import net.minecraft.world.level.material.PushReaction;
 import dev.voltworks.Voltworks;
 import dev.voltworks.block.CableBlock;
 import dev.voltworks.block.ComputerBlock;
@@ -67,7 +69,8 @@ public final class ModBlocks {
 	public static final Block LEAD_ORE = register("lead_ore", Block::new, stoneOre());
 	public static final Block DEEPSLATE_LEAD_ORE = register("deepslate_lead_ore", Block::new, deepslateOre());
 	public static final Block TIN_BLOCK = register("tin_block", Block::new, metal().strength(5.0F, 6.0F));
-	public static final Block LEAD_BLOCK = register("lead_block", Block::new, metal().strength(5.0F, 6.0F));
+	// Lead shields reactors: blast resistance 40 (iron is 6, obsidian 1200), so two layers contain a meltdown.
+	public static final Block LEAD_BLOCK = register("lead_block", Block::new, metal().strength(5.0F, 40.0F));
 	public static final Block STEEL_BLOCK = register("steel_block", Block::new, metal().strength(6.0F, 8.0F));
 	public static final Block URANIUM_ORE = register("uranium_ore", Block::new, stoneOre().lightLevel(s -> 3));
 	public static final Block DEEPSLATE_URANIUM_ORE = register("deepslate_uranium_ore", Block::new, deepslateOre().lightLevel(s -> 3));
@@ -75,6 +78,9 @@ public final class ModBlocks {
 	public static final Block REACTOR_CHAMBER = machine("reactor_chamber", () -> ModBlockEntities.REACTOR,
 			metal().strength(8.0F, 20.0F).lightLevel(state -> state.getValue(MachineBlock.LIT) ? 9 : 0));
 	public static final Block CHARGER = machine("charger", () -> ModBlockEntities.CHARGER, metal().lightLevel(state -> state.getValue(MachineBlock.LIT) ? 7 : 0));
+	// Keeps the 3x3 chunks around it loaded; a redstone signal switches it off. Can't be pushed, so its ticket stays put.
+	public static final Block CHUNK_LOADER = register("chunk_loader", ChunkLoaderBlock::new, metal().strength(5.0F, 8.0F)
+			.pushReaction(PushReaction.IMMOVEABLE).lightLevel(state -> state.getValue(ChunkLoaderBlock.ACTIVE) ? 10 : 0));
 
 	private ModBlocks() {
 	}

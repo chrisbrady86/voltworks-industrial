@@ -14,7 +14,6 @@ import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
@@ -40,6 +39,9 @@ public class VoltworksClient implements ClientModInitializer {
 			if (stack.getItem() instanceof BlockItem bi && bi.getBlock() instanceof ItemPipeBlock) {
 				lines.add(Component.translatable("tooltip.voltworks.pipe.machines").withStyle(ChatFormatting.GRAY));
 				lines.add(Component.translatable("tooltip.voltworks.pipe.chests").withStyle(ChatFormatting.YELLOW));
+			} else if (stack.is(dev.voltworks.registry.ModBlocks.CHUNK_LOADER.asItem())) {
+				lines.add(Component.translatable("tooltip.voltworks.chunk_loader").withStyle(ChatFormatting.GRAY));
+				lines.add(Component.translatable("tooltip.voltworks.chunk_loader.redstone").withStyle(ChatFormatting.DARK_GRAY));
 			}
 		});
 		MenuScreens.register(ModMenus.STORAGE_TERMINAL, StorageTerminalScreen::new);
@@ -54,10 +56,14 @@ public class VoltworksClient implements ClientModInitializer {
 		});
 		BlockEntityRenderers.register(ModBlockEntities.ITEM_PIPE, PipeRenderer::new);
 		BlockEntityRenderers.register(ModBlockEntities.FILTER_PIPE, PipeRenderer::new);
-		GuideBookItem.opener = () -> Minecraft.getInstance().gui.setScreen(new BookViewScreen(new BookViewScreen.BookAccess(guidePages())));
+		GuideBookItem.opener = () -> Minecraft.getInstance().gui.setScreen(new GuideScreen());
 	}
 
-	/** Reads "guide.voltworks.page.1", "...2", ... from the current language until a page is missing. */
+	/**
+	 * Reads "guide.voltworks.page.1", "...2", ... from the current language until a page is missing.
+	 * @deprecated kept for addons built against 0.1.0; use {@link GuideScreen#addPages(String)} to add guide pages.
+	 */
+	@Deprecated
 	public static List<Component> guidePages() {
 		List<Component> pages = new ArrayList<>();
 		Language lang = Language.getInstance();

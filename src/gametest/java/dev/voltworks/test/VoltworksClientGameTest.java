@@ -23,12 +23,14 @@ import dev.voltworks.item.ChargeableItem;
 import dev.voltworks.item.WrenchItem;
 import dev.voltworks.registry.ModBlocks;
 import dev.voltworks.registry.ModComponents;
+import dev.voltworks.registry.ModGameRules;
 import dev.voltworks.registry.ModItems;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.fabricmc.fabric.api.client.gametest.v1.world.TestWorldSave;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -61,6 +63,9 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
+		List<String> allFailures = new ArrayList<>();
+		int dustBeforeRestart;
+		TestWorldSave save;
 		// The harness defaults to a superflat world (no ores); use normal terrain with its fixed seed instead.
 		try (TestSingleplayerContext world = context.worldBuilder()
 				.adjustSettings(s -> s.setWorldType(new WorldCreationUiState.WorldTypeEntry(
@@ -95,7 +100,30 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(20);
 			context.takeScreenshot("voltworks-meltdown");
-			List<String> failures = world.getServer().computeOnServer(VoltworksClientGameTest::check);
+			List<String> failures = new ArrayList<>(world.getServer().computeOnServer(VoltworksClientGameTest::check));
+			// The meltdown gamerule: "contained" spares blocks, "off" shuts the reactor down instead (one rule per world, so in turn)
+			world.getServer().runOnServer(server -> {
+				command(server, "gamerule voltworks:reactor_meltdown contained"); // the real command, as a server admin would type it
+				if (server.overworld().getGameRules().get(ModGameRules.REACTOR_MELTDOWN) != ModGameRules.Meltdown.contained) failures.add("/gamerule voltworks:reactor_meltdown contained did not change the rule");
+				buildHotReactor(server.overworld(), meltdownPos(origin(server)).offset(0, 0, 30));
+			});
+			context.waitTicks(60);
+			world.getServer().runOnServer(server -> {
+				failures.addAll(checkContainedMeltdown(server.overworld(), meltdownPos(origin(server)).offset(0, 0, 30)));
+				server.overworld().getGameRules().set(ModGameRules.REACTOR_MELTDOWN, ModGameRules.Meltdown.off, server);
+				buildHotReactor(server.overworld(), meltdownPos(origin(server)).offset(0, 0, 40));
+			});
+			context.waitTicks(60);
+			world.getServer().runOnServer(server -> {
+				failures.addAll(checkShutdown(server.overworld(), meltdownPos(origin(server)).offset(0, 0, 40)));
+				server.overworld().getGameRules().set(ModGameRules.REACTOR_MELTDOWN, ModGameRules.Meltdown.destructive, server);
+			});
+			// Chunk Loader: the far-away setup kept running; then its loader is broken and the chunk must stop
+			failures.addAll(world.getServer().computeOnServer(server -> ChunkLoaderTest.checkLoaded(server.overworld(), origin(server))));
+			context.waitTicks(100);
+			failures.addAll(world.getServer().computeOnServer(server -> ChunkLoaderTest.checkReleased(server.overworld(), origin(server))));
+			// Pictures for the guide, then the guide screen itself
+			failures.addAll(GuideScenes.capture(context, world));
 			// Open the sped-up crusher's GUI (upgrade slots + output) and screenshot it
 			world.getServer().runOnServer(server -> {
 				BlockPos crusher = origin(server).offset(1, 0, 8);
@@ -168,11 +196,21 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			context.waitTicks(20);
 			context.takeScreenshot("voltworks-jei-refining");
 			context.runOnClient(client -> client.gui.setScreen(null));
-			if (!failures.isEmpty()) {
-				throw new AssertionError("Voltworks checks failed:\n - " + String.join("\n - ", failures));
-			}
-			System.out.println("[voltworks-test] ALL CHECKS PASSED");
+			allFailures.addAll(failures);
+			dustBeforeRestart = world.getServer().computeOnServer(server -> ChunkLoaderTest.loadedDust(server.overworld(), origin(server)));
+			save = world.getWorldSave();
 		}
+		// Restart: the world is saved and closed with a Chunk Loader placed; reopened, its machines must run on
+		// without a player nearby (its chunk ticket is saved with the world).
+		try (TestSingleplayerContext world = save.open()) {
+			context.waitTicks(300);
+			int before = dustBeforeRestart;
+			allFailures.addAll(world.getServer().computeOnServer(server -> ChunkLoaderTest.checkAfterRestart(server.overworld(), origin(server), before)));
+		}
+		if (!allFailures.isEmpty()) {
+			throw new AssertionError("Voltworks checks failed:\n - " + String.join("\n - ", allFailures));
+		}
+		System.out.println("[voltworks-test] ALL CHECKS PASSED");
 	}
 
 	private static BlockPos origin(MinecraftServer server) {
@@ -291,6 +329,8 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		// Something to power: a reactor with a full buffer pauses, so give it 200,000 J of batteries to fill.
 		place(level, hot.west(), ModBlocks.BATTERY_BOX);
 		place(level, hot.north(), ModBlocks.BATTERY_BOX);
+		// E (shielded): a hot reactor sealed in two layers of lead blocks, with stone outside them.
+		buildShieldedReactor(level, shieldedPos(o));
 		// D (idle): 2x2 rods + 5 vents, redstone on, nothing to power.
 		BlockPos idle = o.offset(14, 0, 9);
 		place(level, idle, ModBlocks.REACTOR_CHAMBER);
@@ -300,6 +340,8 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 
 		buildLogistics(level, o);
 		buildComputers(level, o);
+		GuideScenes.build(level, o);
+		ChunkLoaderTest.build(level, o);
 
 		// Camera: stand north of the rows, look south at them
 		command(server, "gamemode spectator @a");
@@ -485,6 +527,22 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		System.out.println("[voltworks-test] Overloaded reactor: melted down=" + gone + ", platform blocks destroyed=" + crater + "/" + (2 * MELT_PLATFORM + 1) * (2 * MELT_PLATFORM + 1));
 		if (!gone) fails.add("9-rod reactor with no cooling should have melted down");
 		if (crater < 10) fails.add("Meltdown should blow a crater in the platform (only " + crater + " blocks)");
+
+		// E: two layers of lead contain a full meltdown. The inner layer may crack; the outer layer and the stone outside must not.
+		BlockPos shield = shieldedPos(o);
+		int innerBroken = 0, outerBroken = 0, stoneBroken = 0;
+		for (int x = -4; x <= 4; x++) for (int y = -4; y <= 4; y++) for (int z = -4; z <= 4; z++) {
+			int d = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
+			BlockState s = level.getBlockState(shield.offset(x, y, z));
+			if (d == 2 && !s.is(ModBlocks.LEAD_BLOCK)) innerBroken++;
+			if (d == 3 && !s.is(ModBlocks.LEAD_BLOCK)) outerBroken++;
+			if (d == 4 && !s.is(Blocks.STONE)) stoneBroken++;
+		}
+		boolean shieldedGone = !level.getBlockState(shield).is(ModBlocks.REACTOR_CHAMBER);
+		System.out.println("[voltworks-test] Lead-shielded meltdown: melted down=" + shieldedGone + ", inner lead broken=" + innerBroken
+				+ "/98, outer lead broken=" + outerBroken + "/218, stone outside broken=" + stoneBroken);
+		if (!shieldedGone) fails.add("The lead-shielded reactor should have melted down");
+		if (outerBroken > 0 || stoneBroken > 0) fails.add("Two layers of lead should contain a meltdown (outer lead broken " + outerBroken + ", stone " + stoneBroken + ")");
 	}
 
 	/*
@@ -500,6 +558,63 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 	 *   z=21: CHEST(256 cobble) express pipe[extract] pipe pipe CHEST         -> 64 items/s: all 256 arrive
 	 *         -> no wrench at all: the crusher's dust reaches the chest, never the furnace
 	 */
+	/** The lead-shielded reactor: north of the meltdown platform, out of reach of its blast. */
+	private static BlockPos shieldedPos(BlockPos o) {
+		return meltdownPos(o).offset(0, 6, -30);
+	}
+
+	/**
+	 * A hot reactor (redstone block beside it) in a 1-block air gap, then two layers of lead (distance 2 and 3), then stone
+	 * (distance 4), all hanging in the air so the terrain doesn't change the result.
+	 */
+	private static void buildShieldedReactor(ServerLevel level, BlockPos pos) {
+		for (int x = -4; x <= 4; x++) for (int y = -4; y <= 4; y++) for (int z = -4; z <= 4; z++) {
+			int d = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
+			level.setBlockAndUpdate(pos.offset(x, y, z), (d == 4 ? Blocks.STONE : d >= 2 ? ModBlocks.LEAD_BLOCK : Blocks.AIR).defaultBlockState());
+		}
+		place(level, pos, ModBlocks.REACTOR_CHAMBER);
+		for (int i = 0; i < 9; i++) put(level, pos, i, ModItems.FUEL_ROD, 1);
+		((ReactorBlockEntity) level.getBlockEntity(pos)).setHeat(ReactorBlockEntity.MAX_HEAT * 95 / 100);
+		level.setBlockAndUpdate(pos.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+	}
+
+	/** A 9-rod reactor, redstone on, already at 95% heat, on a 5x5 stone platform: it reaches 100% within a few ticks. */
+	private static void buildHotReactor(ServerLevel level, BlockPos pos) {
+		for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++) level.setBlockAndUpdate(pos.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+		place(level, pos, ModBlocks.REACTOR_CHAMBER);
+		for (int i = 0; i < 9; i++) put(level, pos, i, ModItems.FUEL_ROD, 1);
+		((ReactorBlockEntity) level.getBlockEntity(pos)).setHeat(ReactorBlockEntity.MAX_HEAT * 95 / 100);
+		level.setBlockAndUpdate(pos.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+	}
+
+	private static List<String> checkContainedMeltdown(ServerLevel level, BlockPos pos) {
+		List<String> fails = new ArrayList<>();
+		int broken = 0;
+		for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++) if (!level.getBlockState(pos.offset(x, -1, z)).is(Blocks.STONE)) broken++;
+		boolean gone = !level.getBlockState(pos).is(ModBlocks.REACTOR_CHAMBER);
+		boolean redstoneLeft = level.getBlockState(pos.east()).is(Blocks.REDSTONE_BLOCK);
+		System.out.println("[voltworks-test] Contained meltdown: reactor gone=" + gone + ", platform blocks broken=" + broken + ", redstone block left=" + redstoneLeft);
+		if (!gone) fails.add("With reactor_meltdown=contained the reactor should still be destroyed");
+		if (broken > 0 || !redstoneLeft) fails.add("With reactor_meltdown=contained no blocks should break (" + broken + " platform blocks broken)");
+		return fails;
+	}
+
+	private static List<String> checkShutdown(ServerLevel level, BlockPos pos) {
+		List<String> fails = new ArrayList<>();
+		if (!(level.getBlockEntity(pos) instanceof ReactorBlockEntity reactor)) {
+			fails.add("With reactor_meltdown=off the reactor must not melt down");
+			return fails;
+		}
+		int fuel = FuelRodItem.getFuel(reactor.getItem(4));
+		System.out.println("[voltworks-test] Meltdowns off: shut down=" + reactor.isShutDown() + ", heat " + reactor.getHeat()
+				+ ", output " + reactor.getOutputPerTick() + " J/t, centre rod fuel " + fuel);
+		if (!reactor.isShutDown()) fails.add("With reactor_meltdown=off a reactor at 100% heat should shut down");
+		if (reactor.getOutputPerTick() != 0) fails.add("A shut-down reactor should report 0 J/t");
+		if (reactor.getHeat() > ReactorBlockEntity.MAX_HEAT) fails.add("Heat should stop at 100% (" + reactor.getHeat() + ")");
+		if (fuel < FuelRodItem.LIFETIME - 30) fails.add("A shut-down reactor must stop burning fuel (rod at " + fuel + ")");
+		return fails;
+	}
+
 	/** Half-width of the meltdown reactor's stone platform. */
 	private static final int MELT_PLATFORM = 8;
 
@@ -800,6 +915,11 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		// Silicon from the Alloy Smelter
 		var silicon = AlloyRecipes.find(new ItemStack(Items.SAND, 2), new ItemStack(Items.COAL, 1));
 		if (silicon.isEmpty() || !silicon.get().recipe().result().is(ModItems.SILICON)) fails.add("Alloy Smelter: 2 sand + coal should make silicon");
+		// Red sand works too (any c:sands), in either slot; suspicious sand doesn't
+		var redSilicon = AlloyRecipes.find(new ItemStack(Items.COAL, 1), new ItemStack(Items.RED_SAND, 2));
+		if (redSilicon.isEmpty() || !redSilicon.get().recipe().result().is(ModItems.SILICON)) fails.add("Alloy Smelter: 2 red sand + coal should make silicon");
+		if (!AlloyRecipes.isIngredient(new ItemStack(Items.RED_SAND))) fails.add("Red sand should be accepted by the Alloy Smelter's input slots");
+		if (AlloyRecipes.isIngredient(new ItemStack(Items.SUSPICIOUS_SAND))) fails.add("Suspicious sand should not be an Alloy Smelter ingredient");
 
 		// Storage network: the powered rack's 2 drives only; the unpowered rack's diamonds stay invisible
 		BlockPos terminal = c.offset(3, 0, 6), crafter = c.offset(4, 0, 6);

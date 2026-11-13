@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -49,6 +50,11 @@ public final class AlloyRecipes {
 		return new Input(s -> s.is(i), count, List.of(i));
 	}
 
+	/** Any sand in the c:sands tag: sand, red sand, and other mods' sands. */
+	private static Input sand(int count) {
+		return new Input(s -> s.is(ConventionalItemTags.SANDS), count, List.of(Items.SAND, Items.RED_SAND));
+	}
+
 	private static Input coal(int count) {
 		return new Input(s -> s.is(ItemTags.COALS), count, List.of(Items.COAL, Items.CHARCOAL)); // coal or charcoal
 	}
@@ -58,7 +64,7 @@ public final class AlloyRecipes {
 		RECIPES.add(new Recipe(of(ModItems.IRON_DUST, 1), coal(2), ModItems.STEEL_INGOT, 1));
 		RECIPES.add(new Recipe(of(Items.GOLD_INGOT, 4), of(Items.NETHERITE_SCRAP, 4), Items.NETHERITE_INGOT, 1));
 		// Silicon for computer chips: reduce sand (or nether quartz) with coal
-		RECIPES.add(new Recipe(of(Items.SAND, 2), coal(1), ModItems.SILICON, 1));
+		RECIPES.add(new Recipe(sand(2), coal(1), ModItems.SILICON, 1));
 		RECIPES.add(new Recipe(of(Items.QUARTZ, 1), coal(1), ModItems.SILICON, 2));
 	}
 
