@@ -3,15 +3,23 @@
 	"id": "voltworks",
 	"version": "${version}",
 	"name": "Voltworks Industrial",
-	"description": "Industrial tech: generators, solar and nuclear power, copper cables, ore crushers, electric furnaces, machine upgrades and power tools.",
+	"description": "Industrial tech: generators, solar and nuclear power, copper cables, ore crushers, electric furnaces, item pipes, computer storage, power tools and steel tools.",
 	"authors": ["Voltworks Team"],
 	"license": "MIT",
 	"icon": "assets/voltworks/icon.png",
+	"contact": {
+		"homepage": "https://github.com/chrisbrady86/voltworks-industrial",
+		"sources": "https://github.com/chrisbrady86/voltworks-industrial",
+		"issues": "https://github.com/chrisbrady86/voltworks-industrial/issues"
+	},
 	"environment": "*",
 	"entrypoints": {
 		"main": ["dev.voltworks.Voltworks"],
 		"client": ["dev.voltworks.client.VoltworksClient"],
 		"jei_mod_plugin": ["dev.voltworks.client.jei.VoltworksJeiPlugin"]
+	},
+	"suggests": {
+		"jei": "*"
 	},
 	"depends": {
 		"fabricloader": ">=0.20.1",

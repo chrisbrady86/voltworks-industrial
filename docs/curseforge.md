@@ -7,40 +7,48 @@ Everything needed to create the Voltworks project and upload the first file. Cop
 | Field | Value |
 |---|---|
 | Name | Voltworks Industrial |
-| Summary (one line) | Industrial tech: power networks, ore crushers, electric furnaces, power tools and a nuclear reactor. |
+| Summary (one line) | Industrial tech: power networks, ore crushers, item pipes, computer storage, power tools and a nuclear reactor. |
 | Game / type | Minecraft / Mods |
 | Main category | Technology |
 | Extra categories | Energy, Ore Processing |
 | License | MIT License |
 | Logo | `docs/images/logo.png` (400×400) |
 | Screenshots | `docs/images/test-world.png`, `crusher-gui.png`, `reactor-gui.png`, `tools-preview.png`, `ore-preview.png` |
-| Source link | Your GitHub repo URL, if you publish one (optional) |
+| Source link | https://github.com/chrisbrady86/voltworks-industrial |
+| Issues link | https://github.com/chrisbrady86/voltworks-industrial/issues |
 
 ## First file upload
 
 | Field | Value |
 |---|---|
-| File | `build/libs/voltworks-0.1.0.jar` (not the `-sources` jar) |
-| Display name | Voltworks Industrial 0.1.0 |
+| File | `build/libs/voltworks-0.2.0.jar` (not the `-sources` jar) |
+| Display name | Voltworks Industrial 0.2.0 |
 | Release type | Beta |
 | Game version | 26.3 |
 | Mod loader | Fabric |
 | Java version | Java 25 |
 | Environment | Client and Server |
-| Related project | **Fabric API** — Required Dependency |
+| Related projects | **Fabric API** — Required Dependency · **JEI** — Optional Dependency |
 | Changelog | See below |
 
-### Changelog for 0.1.0
+Version 0.2.0 is the first public upload. (0.1.0 was the private test build that ran on the author's server; worlds from it load in 0.2.0 unchanged.)
+
+### Changelog for 0.2.0
 
 ```
 First public release.
 - Power: Generator, Solar Panel, Thermal Generator, Reactor Chamber; Copper Cable; Small, Medium, Large and Huge Batteries
 - Machines: Crusher, Electric Furnace, Alloy Smelter, Industrial Crusher, Induction Furnace, Uranium Refiner
 - Machine upgrades: Speed, Capacity, Ejector
-- Power tools: Electric Drill, Chainsaw (tree felling), Advanced Drill (3x3 mode), Charger
-- Logistics: glass Item Pipes in three speeds (watch the items travel), Filter Pipe, Wrench
+- Nuclear: Fuel Rods, Heat Vents, meltdowns contained by Lead Blocks; /gamerule voltworks:reactor_meltdown destructive|contained|off
+- Power tools: Electric Drill, Chainsaw (fells whole trees), Advanced Drill (3x3 mode), Charger
+- Steel tools: Sword, Pickaxe, Axe, Shovel, Hoe and Spear, between iron and diamond
+- Logistics: glass Item Pipes in three speeds (watch the items travel), Filter Pipe, Wrench. Pipes laid from a chest pull from it by themselves
 - Computer storage: Hard Drives (1K-64K), Drive Rack, Data Cable, searchable Storage Terminal, Computer Crafter, Storage Interface (pipe access to storage)
+- Chunk Loader: keeps the 3x3 chunks around it running
+- Voltworks Guide: in-game book with pictures of example builds; addons can add pages
 - New ores: Tin, Lead, Uranium
+- JEI support (recipe pages, Computer Crafter recipe transfer); works with modded woods, leaves and sands (e.g. Biomes O' Plenty)
 ```
 
 ## Project description (paste into the description editor, Markdown mode)
@@ -53,7 +61,7 @@ First public release.
 Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through copper cables, and feed it to machines that double (or triple) your ore output.
 
 ## ⚡ Power
-- **Generator** — burns any furnace fuel for 10 J/t (one coal = 4,000 J).
+- **Generator** — burns any furnace fuel for 10 J/t (one coal = 4,000 J), including modded logs and planks.
 - **Solar Panel** — free power in daylight.
 - **Thermal Generator** — sits next to lava source blocks: 5 J/t per source, up to 25 J/t.
 - **Reactor Chamber** — the big one. See below.
@@ -67,6 +75,7 @@ Voltworks Industrial is a tech mod for Fabric. Generate power, carry it through 
 | Alloy Smelter | Iron + 2 coal → **Steel**. Also makes netherite. |
 | Industrial Crusher | 3 dust per ore, 4× faster |
 | Induction Furnace | Two independent lanes, each 4× furnace speed |
+| Uranium Refiner | Raw Uranium → Refined Uranium for fuel rods; reprocesses spent rods |
 
 Every machine has **3 upgrade slots**:
 - **Speed Upgrade** — 30% faster each (uses more power)
@@ -78,13 +87,29 @@ The Reactor Chamber has a 3×3 grid for **Fuel Rods** and **Heat Vents**.
 - Each rod pulses once, **plus once for every rod beside it** — clusters make far more power… and far more heat.
 - Heat Vents cool more when placed next to rods; water around the reactor helps too.
 - It only runs with a **redstone signal**, and a **comparator** reads its heat — build an automatic shutdown!
-- Let it reach 100% heat and it **melts down**. Spectacularly.
+- Let it reach 100% heat and it **melts down**. Spectacularly. Two layers of **Lead Blocks** contain the blast.
+- Server admins choose what a meltdown does: `/gamerule voltworks:reactor_meltdown destructive|contained|off`.
 
-## ⛏️ Power tools
+## 📦 Item pipes
+- Clear glass **Item Pipes** — watch the items travel. Three speeds: tin, steel and gold.
+- Machines empty into chests by themselves. Start a line at a chest and it pulls from that chest automatically.
+- **Filter Pipes** sort items; the **Wrench** connects, disconnects and switches pipe arms.
+
+## 💾 Computer storage
+**Hard Drives** in a powered **Drive Rack**, a searchable **Storage Terminal**, a **Computer Crafter** that crafts straight from storage, and a **Storage Interface** so pipes can reach it all.
+
+## ⛏️ Tools
 - **Electric Drill** — pickaxe + shovel, faster than diamond.
 - **Chainsaw** — cuts wood and leaves, and fells a whole tree from one cut (sneak to cut a single log).
 - **Advanced Drill** — diamond tier with a **3×3 mining mode** (sneak + right-click).
-- Tools never break: recharge them in the **Charger**.
+- Power tools never break: recharge them in the **Charger**.
+- **Steel tools** — sword, pickaxe, axe, shovel, hoe and spear, between iron and diamond.
+
+## 🗺️ And more
+- **Chunk Loader** keeps your factory running while you're away.
+- The **Voltworks Guide** explains everything in-game, with pictures of example builds.
+- **JEI** shows every machine recipe (optional).
+- Works with modded woods, leaves and sands, such as Biomes O' Plenty's.
 
 ## 🪨 New ores
 **Tin** (mid-depth), **Lead** (deep) and **Uranium** (very deep, faintly glowing). All work with the Crusher for double output, and use common `c:` tags for compatibility with other mods.
@@ -93,6 +118,7 @@ The Reactor Chamber has a 3×3 grid for **Fuel Rods** and **Heat Vents**.
 - Minecraft 26.3
 - Fabric Loader
 - [Fabric API](https://www.curseforge.com/minecraft/mc-mods/fabric-api)
+- Optional: [JEI](https://www.curseforge.com/minecraft/mc-mods/jei)
 
 Modpacks: yes, go ahead! Voltworks Industrial is MIT licensed.
 ```
@@ -102,3 +128,4 @@ Modpacks: yes, go ahead! Voltworks Industrial is MIT licensed.
 - [ ] `./gradlew build` and grab the fresh jar from `build/libs/`
 - [x] Name: "Voltworks" was taken on CurseForge, so the project is "Voltworks Industrial"
 - [ ] Test the jar once in a normal Minecraft install (Fabric Loader + Fabric API) to be sure it loads outside the dev environment
+- [ ] Back up the server world, then replace the 0.1.0 jar on the server with 0.2.0 (same block and item IDs; uranium changes only affect new chunks)
