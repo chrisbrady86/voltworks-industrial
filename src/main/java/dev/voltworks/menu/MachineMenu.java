@@ -118,14 +118,18 @@ public class MachineMenu extends AbstractContainerMenu {
 			if (!moveItemStackTo(stack, machineSlots, end, true)) return ItemStack.EMPTY;
 		} else {
 			// Try each machine input that accepts this item, preferring empty ones (spreads across lanes).
-			boolean moved = false;
+			boolean moved = false, belongs = false;
 			for (int pass = 0; pass < 2 && !stack.isEmpty(); pass++) {
 				for (int i = 0; i < machineSlots && !stack.isEmpty(); i++) {
 					Slot target = slots.get(i);
+					if (target.mayPlace(stack)) belongs = true;
 					if (target.mayPlace(stack) && (pass == 1 || !target.hasItem())) {
 						moved |= moveItemStackTo(stack, i, i + 1, false);
 					}
 				}
+			}
+			if (!moved && belongs) {
+				return ItemStack.EMPTY; // the machine takes this item but is full: leave the rest where it is
 			}
 			if (!moved) {
 				if (index < hotbarStart) {

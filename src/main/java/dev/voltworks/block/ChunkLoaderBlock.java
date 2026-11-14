@@ -2,6 +2,7 @@ package dev.voltworks.block;
 
 import dev.voltworks.Voltworks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -14,6 +15,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -26,7 +29,8 @@ import org.jspecify.annotations.Nullable;
  * {@code /forceload}. A redstone signal switches it off.
  *
  * <p>It holds a chunk ticket of its own type, saved with the world, so the area stays loaded across restarts
- * without the block having to run any code. Overlapping loaders each hold their own ticket, and admin
+ * without the block having to run any code. Loaders in different chunks each hold their own ticket, loaders in the
+ * same chunk share one (returned when the last of them goes), and admin
  * {@code /forceload} areas are separate, so removing one never unloads another's chunks.
  */
 public class ChunkLoaderBlock extends Block {
@@ -90,14 +94,36 @@ public class ChunkLoaderBlock extends Block {
 		return InteractionResult.SUCCESS;
 	}
 
+	/**
+	 * Takes or returns the ticket. Minecraft keeps only one ticket of a kind per chunk, so loaders standing in the same
+	 * chunk share it: it is only returned when no other active loader is left in that chunk.
+	 */
 	private static void setTicket(ServerLevel level, BlockPos pos, boolean add) {
 		ChunkPos chunk = ChunkPos.containing(pos);
 		if (add) {
 			level.getChunkSource().addTicketWithRadius(TICKET, chunk, RADIUS);
-		} else {
+		} else if (!hasOtherActiveLoader(level, pos)) {
 			level.getChunkSource().removeTicketWithRadius(TICKET, chunk, RADIUS);
 		}
 	}
+
+	/** Another switched-on Chunk Loader in the chunk of {@code pos} (not the one at {@code pos} itself). */
+	private static boolean hasOtherActiveLoader(ServerLevel level, BlockPos pos) {
+		LevelChunk chunk = level.getChunkAt(pos);
+		LevelChunkSection[] sections = chunk.getSections();
+		for (int i = 0; i < sections.length; i++) {
+			LevelChunkSection section = sections[i];
+			if (section.hasOnlyAir() || !section.maybeHas(s -> s.getBlock() instanceof ChunkLoaderBlock && s.getValue(ACTIVE))) continue;
+			int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
+			for (int x = 0; x < 16; x++) for (int y = 0; y < 16; y++) for (int z = 0; z < 16; z++) {
+				BlockState s = section.getBlockState(x, y, z);
+				if (!(s.getBlock() instanceof ChunkLoaderBlock) || !s.getValue(ACTIVE)) continue;
+				if ((pos.getX() & 15) != x || pos.getY() != baseY + y || (pos.getZ() & 15) != z) return true;
+			}
+		}
+		return false;
+	}
+
 
 	/** Loads the class so the ticket type is registered during mod init. */
 	public static void init() {

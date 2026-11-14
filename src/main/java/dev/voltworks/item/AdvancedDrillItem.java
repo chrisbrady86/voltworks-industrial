@@ -52,7 +52,7 @@ public class AdvancedDrillItem extends PowerToolItem {
 				&& !player.isShiftKeyDown()) {
 			breakingArea = true;
 			try {
-				breakArea(stack, level, pos, player);
+				breakArea(stack, level, pos, player, state.getBlock().defaultDestroyTime());
 			} finally {
 				breakingArea = false;
 			}
@@ -60,7 +60,12 @@ public class AdvancedDrillItem extends PowerToolItem {
 		return true;
 	}
 
-	private void breakArea(ItemStack stack, Level level, BlockPos center, ServerPlayer player) {
+	/**
+	 * @param centerHardness hardness of the block that was actually dug. Much harder neighbours are left alone, so digging
+	 *                       stone doesn't take the obsidian beside it for free (ores next to stone or dirt still go).
+	 */
+	private void breakArea(ItemStack stack, Level level, BlockPos center, ServerPlayer player, float centerHardness) {
+		float maxHardness = centerHardness * 3.0F + 3.0F;
 		// Pick the plane facing the player: looking steeply up/down -> horizontal layer, else a vertical wall.
 		Direction.Axis normal = Math.abs(player.getLookAngle().y) > 0.7 ? Direction.Axis.Y : player.getDirection().getAxis();
 		for (int a = -1; a <= 1; a++) {
@@ -74,7 +79,7 @@ public class AdvancedDrillItem extends PowerToolItem {
 				BlockState targetState = level.getBlockState(target);
 				if (!hasPower(stack)) return;
 				// Only blocks this drill mines efficiently and can harvest (never bedrock, fluids, air...).
-				if (targetState.isAir() || targetState.getDestroySpeed(level, target) < 0
+				if (targetState.isAir() || targetState.getDestroySpeed(level, target) < 0 || targetState.getDestroySpeed(level, target) > maxHardness
 						|| super.getDestroySpeed(stack, targetState) <= 1.0F || !isCorrectToolForDrops(stack, targetState)) {
 					continue;
 				}

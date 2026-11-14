@@ -23,6 +23,17 @@ public record DriveContents(List<Entry> entries) {
 		).apply(i, Entry::new));
 		public static final StreamCodec<RegistryFriendlyByteBuf, Entry> STREAM_CODEC = StreamCodec.composite(
 				ItemStack.STREAM_CODEC, Entry::item, ByteBufCodecs.VAR_INT, Entry::count, Entry::new);
+
+		/** By value (ItemStack itself compares by identity), as data components must be. */
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof Entry e && count == e.count && ItemStack.matches(item, e.item);
+		}
+
+		@Override
+		public int hashCode() {
+			return 31 * ItemStack.hashItemAndComponents(item) + count;
+		}
 	}
 
 	public static final Codec<DriveContents> CODEC = Entry.CODEC.listOf().xmap(DriveContents::new, DriveContents::entries);

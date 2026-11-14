@@ -129,6 +129,12 @@ public abstract class PoweredContainerBlockEntity extends BaseContainerBlockEnti
 		setChanged();
 	}
 
+	/** The side setup as it is saved ("side_config"), or -1 while it is still this machine's default. */
+	public int customSideConfig() {
+		int packed = sides.pack();
+		return packed == new SideConfig(this::defaultSideMode).pack() ? -1 : packed;
+	}
+
 	/** Wrench: advance this side to the next mode (none, input, output, both). */
 	public SideConfig.Mode cycleSideMode(Direction dir) {
 		SideConfig.Mode next = getSideMode(dir).next();

@@ -83,11 +83,21 @@ final class ChunkLoaderTest {
 		if (dustA < 4) fails.add("Machines next to a Chunk Loader should keep working far from the player (" + dustA + " dust)");
 		if (loaderB.getValue(ChunkLoaderBlock.ACTIVE)) fails.add("A redstone signal should switch the Chunk Loader off");
 		if (bTicking || dustB > 0) fails.add("Without an active Chunk Loader the far-away chunk should not run (ticking=" + bTicking + ", " + dustB + " dust)");
-		level.removeBlock(a.offset(1, 0, 1), false); // break A's loader: its ticket must go
+		// A second loader in the same chunk, then break the first: the chunk must stay loaded
+		level.setBlockAndUpdate(a.offset(1, 0, 2), ModBlocks.CHUNK_LOADER.defaultBlockState());
+		level.removeBlock(a.offset(1, 0, 1), false);
 		return fails;
 	}
 
-	/** Some time after breaking A's loader. */
+	/** Some time after breaking the first of A's two loaders: the second keeps the chunk. Then breaks the second. */
+	static List<String> checkShared(ServerLevel level, BlockPos o) {
+		boolean ticking = ticking(level, loadedPos(o));
+		System.out.println("[voltworks-test] Chunk Loader: one of two in a chunk broken, chunk still ticking=" + ticking);
+		level.removeBlock(loadedPos(o).offset(1, 0, 2), false); // break the last one: now the ticket must go
+		return ticking ? List.of() : List.of("Breaking one of two Chunk Loaders in a chunk must not unload it");
+	}
+
+	/** Some time after breaking A's last loader. */
 	static List<String> checkReleased(ServerLevel level, BlockPos o) {
 		boolean ticking = ticking(level, loadedPos(o));
 		System.out.println("[voltworks-test] Chunk Loader broken: chunk still ticking=" + ticking);

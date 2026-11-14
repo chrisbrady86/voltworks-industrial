@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.providers.number.ints.ResolvableInt;
 import org.jspecify.annotations.Nullable;
 
-/** Burns furnace fuel to make power. 10 J/tick while burning; coal = 16,000 J. */
+/** Burns furnace fuel to make power. 10 J/tick while burning; coal = 4,000 J. */
 public class GeneratorBlockEntity extends PoweredContainerBlockEntity {
 	public static final int OUTPUT_PER_TICK = 10;
 	/** Fuel burns this many times faster than in a furnace: coal (1,600 ticks) gives 400 ticks = 4,000 J. */

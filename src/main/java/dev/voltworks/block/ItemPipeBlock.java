@@ -92,8 +92,8 @@ public class ItemPipeBlock extends BaseEntityBlock {
 	private static final Map<Direction, VoxelShape> HIT_STUBS = Shapes.rotateAll(Block.boxZ(8, 2, 4));
 	/** Longest line {@link #lineTouchesInventory} follows. */
 	private static final int MAX_SCAN = 512;
-	private final Map<BlockState, VoxelShape> shapes = new HashMap<>();
-	private final Map<BlockState, VoxelShape> hitShapes = new HashMap<>();
+	private final Map<BlockState, VoxelShape> shapes = new java.util.concurrent.ConcurrentHashMap<>(); // read from several threads
+	private final Map<BlockState, VoxelShape> hitShapes = new java.util.concurrent.ConcurrentHashMap<>();
 
 	public final Tier tier;
 
@@ -181,6 +181,7 @@ public class ItemPipeBlock extends BaseEntityBlock {
 				if (!get(ps, d).isOpen()) continue;
 				BlockPos n = p.relative(d);
 				if (n.equals(pipePos)) continue;
+				if (level instanceof Level l && !l.isLoaded(n)) continue;
 				BlockState ns = level.getBlockState(n);
 				if (ns.getBlock() instanceof ItemPipeBlock) {
 					if (get(ns, d.getOpposite()).isOpen() && seen.add(n)) queue.add(n);

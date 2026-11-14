@@ -4,8 +4,14 @@ import dev.voltworks.Voltworks;
 import dev.voltworks.block.ItemPipeBlock;
 import dev.voltworks.block.ItemPipeBlock.Side;
 import dev.voltworks.block.MachineBlock;
+import dev.voltworks.block.entity.BatteryBlockEntity;
 import dev.voltworks.block.entity.PoweredContainerBlockEntity;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.component.TypedEntityData;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import dev.voltworks.block.entity.SideConfig;
+import dev.voltworks.registry.ModBlocks;
 import dev.voltworks.registry.ModComponents;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -107,15 +113,27 @@ public class WrenchItem extends Item {
 	public static boolean dismantle(Level level, BlockPos pos, Player player) {
 		BlockState state = level.getBlockState(pos);
 		Block block = state.getBlock();
-		if (!BuiltInRegistries.BLOCK.getKey(block).getNamespace().equals(Voltworks.MOD_ID) || block.asItem() == net.minecraft.world.item.Items.AIR) {
+		if (!BuiltInRegistries.BLOCK.getKey(block).getNamespace().equals(Voltworks.MOD_ID) || block.asItem() == net.minecraft.world.item.Items.AIR || isOre(block)) {
 			return false;
 		}
 		ItemStack drop = new ItemStack(block.asItem());
+		// The picked-up block remembers a battery's charge and a machine's side setup (inventories spill as usual)
+		BlockEntity be = level.getBlockEntity(pos);
+		CompoundTag keep = new CompoundTag();
+		if (be instanceof BatteryBlockEntity battery && battery.getEnergy() > 0) keep.putInt("energy", battery.getEnergy());
+		if (be instanceof PoweredContainerBlockEntity machine && machine.customSideConfig() >= 0) keep.putInt("side_config", machine.customSideConfig());
+		if (be != null && !keep.isEmpty()) drop.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(be.getType(), keep));
 		level.destroyBlock(pos, false, player, 512);
 		if (!player.getInventory().add(drop)) {
 			Block.popResource(level, pos, drop); // inventory full: drop it where the block was
 		}
 		return true;
+	}
+
+	/** Ores have to be mined with the right pickaxe; the wrench does not pick them up. */
+	private static boolean isOre(Block block) {
+		return block == ModBlocks.TIN_ORE || block == ModBlocks.DEEPSLATE_TIN_ORE || block == ModBlocks.LEAD_ORE || block == ModBlocks.DEEPSLATE_LEAD_ORE
+				|| block == ModBlocks.URANIUM_ORE || block == ModBlocks.DEEPSLATE_URANIUM_ORE;
 	}
 
 	/** Machines turn to face the clicked side (or a quarter turn if it already does); other blocks turn clockwise. */
@@ -126,6 +144,11 @@ public class WrenchItem extends Item {
 			Direction facing = state.getValue(MachineBlock.FACING);
 			Direction target = clickedFace.getAxis().isHorizontal() && clickedFace != facing ? clickedFace : facing.getClockWise();
 			rotated = state.setValue(MachineBlock.FACING, target);
+		} else if (state.getBlock() instanceof net.minecraft.world.level.block.piston.PistonHeadBlock
+				|| state.getBlock() instanceof net.minecraft.world.level.block.piston.MovingPistonBlock
+				|| (state.hasProperty(BlockStateProperties.EXTENDED) && state.getValue(BlockStateProperties.EXTENDED))) {
+			// An extended piston turned away from its head would delete whatever it faces when it retracts
+			return Component.translatable("message.voltworks.wrench.cant_rotate");
 		} else if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF) || state.hasProperty(BlockStateProperties.BED_PART)
 				|| (state.hasProperty(BlockStateProperties.CHEST_TYPE) && state.getValue(BlockStateProperties.CHEST_TYPE) != net.minecraft.world.level.block.state.properties.ChestType.SINGLE)) {
 			return Component.translatable("message.voltworks.wrench.cant_rotate");

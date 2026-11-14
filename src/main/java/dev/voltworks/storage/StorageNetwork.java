@@ -3,6 +3,8 @@ package dev.voltworks.storage;
 import dev.voltworks.block.DataConnectable;
 import dev.voltworks.block.entity.DriveRackBlockEntity;
 import dev.voltworks.item.HardDriveItem;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.Object2LongLinkedOpenCustomHashMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +26,13 @@ import net.minecraft.world.level.Level;
  */
 public final class StorageNetwork {
 	private static final int MAX_BLOCKS = 1024;
+	/** Goes up every time any drive's contents change (server thread only). */
+	private static long changes;
+
+	/** A number that changes whenever something is stored in or taken out of any network; lets views notice they are stale. */
+	public static long changes() {
+		return changes;
+	}
 
 	/** One kind of item and how many the whole network holds. */
 	public record StoredItem(ItemStack item, long count) {
@@ -47,8 +56,22 @@ public final class StorageNetwork {
 		void set(DriveContents contents) {
 			HardDriveItem.setContents(stack(), contents);
 			rack.setChanged();
+			changes++;
 		}
 	}
+
+	/** Stacks are the same key when they are the same item with the same components (counts ignored). */
+	private static final Hash.Strategy<ItemStack> SAME_ITEM = new Hash.Strategy<>() {
+		@Override
+		public int hashCode(ItemStack stack) {
+			return stack == null ? 0 : ItemStack.hashItemAndComponents(stack);
+		}
+
+		@Override
+		public boolean equals(ItemStack a, ItemStack b) {
+			return a == b || (a != null && b != null && ItemStack.isSameItemSameComponents(a, b));
+		}
+	};
 
 	private final List<DriveRackBlockEntity> racks;
 	private final List<Drive> drives = new ArrayList<>();
@@ -69,9 +92,11 @@ public final class StorageNetwork {
 		ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 		seen.add(start);
 		queue.add(start);
-		while (!queue.isEmpty() && seen.size() < MAX_BLOCKS) {
+		int blocks = 0; // cables and computer blocks only: the blocks around them don't count towards the limit
+		while (!queue.isEmpty() && blocks < MAX_BLOCKS) {
 			BlockPos p = queue.poll();
 			if (!(level.getBlockState(p).getBlock() instanceof DataConnectable)) continue;
+			blocks++;
 			if (level.getBlockEntity(p) instanceof DriveRackBlockEntity rack && rack.isOnline()) racks.add(rack);
 			for (Direction d : Direction.values()) {
 				BlockPos n = p.relative(d);
@@ -104,19 +129,12 @@ public final class StorageNetwork {
 
 	/** Everything stored, merged across drives, most plentiful first. */
 	public List<StoredItem> contents() {
-		List<StoredItem> list = new ArrayList<>();
+		Object2LongLinkedOpenCustomHashMap<ItemStack> totals = new Object2LongLinkedOpenCustomHashMap<>(SAME_ITEM);
 		for (Drive d : drives) {
-			outer:
-			for (DriveContents.Entry e : d.contents().entries()) {
-				for (int i = 0; i < list.size(); i++) {
-					if (ItemStack.isSameItemSameComponents(list.get(i).item(), e.item())) {
-						list.set(i, new StoredItem(list.get(i).item(), list.get(i).count() + e.count()));
-						continue outer;
-					}
-				}
-				list.add(new StoredItem(e.item(), e.count()));
-			}
+			for (DriveContents.Entry e : d.contents().entries()) totals.addTo(e.item(), e.count());
 		}
+		List<StoredItem> list = new ArrayList<>(totals.size());
+		totals.object2LongEntrySet().forEach(e -> list.add(new StoredItem(e.getKey(), e.getLongValue())));
 		list.sort(Comparator.comparingLong(StoredItem::count).reversed()
 				.thenComparing(s -> s.item().getHoverName().getString()));
 		return list;
@@ -130,7 +148,8 @@ public final class StorageNetwork {
 
 	/** Store as much of {@code stack} as fits (drives already holding it first). Returns how many were stored. */
 	public int insert(ItemStack stack, boolean simulate) {
-		if (stack.isEmpty() || stack.getItem() instanceof HardDriveItem) return 0; // no drives inside drives
+		// No drives inside drives, directly or packed in a shulker box or bundle: contents could nest without limit
+		if (stack.isEmpty() || stack.getItem() instanceof HardDriveItem || HardDriveItem.holdsLoadedDrive(stack)) return 0;
 		int left = stack.getCount();
 		for (int pass = 0; pass < 2 && left > 0; pass++) {
 			for (Drive d : drives) {

@@ -22,6 +22,7 @@ import dev.voltworks.block.entity.SideConfig;
 import dev.voltworks.item.FuelRodItem;
 import dev.voltworks.item.ChargeableItem;
 import dev.voltworks.item.WrenchItem;
+import dev.voltworks.block.entity.StorageInterfaceBlockEntity;
 import dev.voltworks.registry.ModBlocks;
 import dev.voltworks.registry.ModComponents;
 import dev.voltworks.registry.ModGameRules;
@@ -34,6 +35,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.fabricmc.fabric.api.client.gametest.v1.world.TestWorldSave;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -47,6 +49,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -125,6 +128,8 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 			});
 			// Chunk Loader: the far-away setup kept running; then its loader is broken and the chunk must stop
 			failures.addAll(world.getServer().computeOnServer(server -> ChunkLoaderTest.checkLoaded(server.overworld(), origin(server))));
+			context.waitTicks(100);
+			failures.addAll(world.getServer().computeOnServer(server -> ChunkLoaderTest.checkShared(server.overworld(), origin(server))));
 			context.waitTicks(100);
 			failures.addAll(world.getServer().computeOnServer(server -> ChunkLoaderTest.checkReleased(server.overworld(), origin(server))));
 			// Pictures for the guide, then the guide screen itself
@@ -451,6 +456,16 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (mined != 9) fails.add("Advanced Drill 3x3 should mine all 9 blocks (mined " + mined + ")");
 		if (used != 9 * 80) fails.add("3x3 should cost 9 x 80 J (used " + used + ")");
 		if (level.getBlockState(center.offset(0, 0, 1)).isAir()) fails.add("3x3 must not dig the block behind the wall");
+		// Digging stone must not take much harder blocks beside it (obsidian), but does take ore
+		level.setBlockAndUpdate(center, stone);
+		level.setBlockAndUpdate(center.offset(1, 0, 0), Blocks.OBSIDIAN.defaultBlockState());
+		level.setBlockAndUpdate(center.offset(-1, 0, 0), Blocks.DEEPSLATE_IRON_ORE.defaultBlockState());
+		player.gameMode.destroyBlock(center);
+		boolean obsidianKept = level.getBlockState(center.offset(1, 0, 0)).is(Blocks.OBSIDIAN), oreMined = level.getBlockState(center.offset(-1, 0, 0)).isAir();
+		System.out.println("[voltworks-test] 3x3 drill on stone: obsidian beside it kept=" + obsidianKept + ", ore beside it mined=" + oreMined);
+		if (!obsidianKept) fails.add("3x3 on stone must not break the obsidian beside it");
+		if (!oreMined) fails.add("3x3 on stone should still mine ore beside it");
+		level.setBlockAndUpdate(center.offset(1, 0, 0), Blocks.AIR.defaultBlockState());
 
 		// 4. Chainsaw tree felling. Built now (not at the start) so the natural leaves can't decay first.
 		//    Tree: oak trunk y=0..5, a diagonal branch (1,5,1)-(2,6,1), natural leaves on top, a birch log touching the trunk.
@@ -788,6 +803,29 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (!picked || !level.getBlockState(frame).isAir()) fails.add("Wrench should pick up the Machine Frame");
 		if (!player.getInventory().contains(new ItemStack(ModBlocks.MACHINE_FRAME.asItem()))) fails.add("Picked-up Machine Frame should be in the player's inventory");
 		if (WrenchItem.dismantle(level, l.offset(0, -1, 0), player)) fails.add("Wrench must not pick up vanilla blocks");
+		// Ores are mined, not picked up; an extended piston can't be turned away from its head
+		level.setBlockAndUpdate(frame, ModBlocks.TIN_ORE.defaultBlockState());
+		if (WrenchItem.dismantle(level, frame, player) || !level.getBlockState(frame).is(ModBlocks.TIN_ORE)) fails.add("Wrench must not pick up ores");
+		BlockState extended = Blocks.PISTON.defaultBlockState().setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING, Direction.EAST)
+				.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.EXTENDED, true);
+		level.setBlock(frame, extended, Block.UPDATE_CLIENTS);
+		WrenchItem.rotate(level, frame, Direction.NORTH);
+		if (level.getBlockState(frame) != extended) fails.add("Wrench must not rotate an extended piston");
+		level.setBlock(frame, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+		// A battery picked up with the wrench keeps its charge when placed again
+		level.setBlockAndUpdate(frame, ModBlocks.SMALL_BATTERY.defaultBlockState());
+		((BatteryBlockEntity) level.getBlockEntity(frame)).receiveEnergy(100, false);
+		WrenchItem.dismantle(level, frame, player);
+		ItemStack carried = ItemStack.EMPTY;
+		for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+			if (player.getInventory().getItem(i).is(ModBlocks.SMALL_BATTERY.asItem())) carried = player.getInventory().getItem(i);
+		}
+		level.setBlockAndUpdate(frame, ModBlocks.SMALL_BATTERY.defaultBlockState());
+		net.minecraft.world.item.BlockItem.updateCustomBlockEntityTag(level, player, frame, carried);
+		int kept = level.getBlockEntity(frame) instanceof BatteryBlockEntity replaced ? replaced.getEnergy() : -1;
+		System.out.println("[voltworks-test] Battery picked up with the wrench and placed again: " + kept + " J of 100");
+		if (kept != 100) fails.add("A battery picked up with the wrench should keep its charge (100 J -> " + kept + ")");
+		level.setBlock(frame, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
 
 		// Row 5: no wrench used. The pipe arm on the crusher stays CONNECTED and still pulls its output.
 		ItemPipeBlock.Side plainSide = ItemPipeBlock.get(level.getBlockState(l.offset(3, 0, 12)), Direction.WEST);
@@ -984,6 +1022,14 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 		if (rawTin != 0) fails.add("The filtered Storage Interface line should have sent all raw tin to the crusher (" + rawTin + " left)");
 		if (tinDust != 4) fails.add("The crusher's 4 tin dust should be back in storage (" + tinDust + ")");
 		if (cobble != 8) fails.add("The filter must keep cobblestone in storage (" + cobble + " of 8 left)");
+		checkInterfaceAsInventory(fails, level, c.offset(5, 0, 6), net);
+		// A drive with something on it, packed in a shulker box, is refused (contents could nest without limit)
+		ItemStack loadedDrive = new ItemStack(ModItems.SMALL_HARD_DRIVE);
+		dev.voltworks.item.HardDriveItem.setContents(loadedDrive, dev.voltworks.storage.DriveContents.EMPTY.add(new ItemStack(Items.DIRT), 1));
+		ItemStack box = new ItemStack(Items.SHULKER_BOX);
+		box.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(List.of(loadedDrive)));
+		if (net.insert(box, true) != 0) fails.add("Storage must refuse a shulker box holding a loaded hard drive");
+		if (net.insert(new ItemStack(Items.SHULKER_BOX), true) != 1) fails.add("Storage should still take an ordinary shulker box");
 
 		// Computer Crafter: pattern = 2 planks stacked -> 4 sticks; 8 planks in storage -> 4 crafts
 		net.insert(new ItemStack(Items.OAK_PLANKS, 8));
@@ -1044,6 +1090,53 @@ public class VoltworksClientGameTest implements FabricClientGameTest {
 	}
 
 	/** Ores must have generated in natural terrain, drop raw ore, and need the right pickaxe tier. */
+	/**
+	 * The Storage Interface used the way vanilla hoppers and other mods' pipes (Fabric's transfer API) use an inventory:
+	 * they read a slot's stack, change its count and/or write a stack back. Nothing may be duplicated or lost.
+	 */
+	private static void checkInterfaceAsInventory(List<String> fails, ServerLevel level, BlockPos pos, StorageNetwork net) {
+		StorageInterfaceBlockEntity iface = (StorageInterfaceBlockEntity) level.getBlockEntity(pos);
+		ItemStack cobbleKey = new ItemStack(Items.COBBLESTONE), dirtKey = new ItemStack(Items.DIRT);
+		int slot = -1;
+		for (int i = 0; i < iface.getContainerSize(); i++) if (iface.getItem(i).is(Items.COBBLESTONE)) slot = i;
+		if (slot < 0) {
+			fails.add("Storage Interface should show the stored cobblestone in a slot");
+			return;
+		}
+		// A hopper with no room: takes one, fails to place it, and restores the count on the stack it was shown
+		ItemStack shown = iface.getItem(slot);
+		int before = shown.getCount();
+		iface.removeItem(slot, 1);
+		shown.setCount(before);
+		iface.getContainerSize();
+		long afterHopper = net.count(cobbleKey);
+		// Transfer API extraction: lower the shown stack's count and write it back...
+		shown = iface.getItem(slot);
+		shown.shrink(3);
+		iface.setItem(slot, shown);
+		long afterExtract = net.count(cobbleKey);
+		// ...and an aborted one: the original stack is written back
+		iface.setItem(slot, new ItemStack(Items.COBBLESTONE, 8));
+		long afterAbort = net.count(cobbleKey);
+		// A simulated insert (put in, then taken back) stores nothing; a real one arrives on the next tick
+		int insertSlot = iface.getContainerSize() - 1;
+		iface.setItem(insertSlot, new ItemStack(Items.DIRT, 4));
+		iface.setItem(insertSlot, ItemStack.EMPTY);
+		iface.serverTick(level, pos, level.getBlockState(pos));
+		long afterSimulated = net.count(dirtKey);
+		iface.setItem(insertSlot, new ItemStack(Items.DIRT, 4));
+		iface.serverTick(level, pos, level.getBlockState(pos));
+		long afterInsert = net.count(dirtKey);
+		net.extract(dirtKey, 4, false);
+		System.out.println("[voltworks-test] Storage Interface as an inventory: cobblestone 8 -> " + afterHopper + " (failed hopper pull) -> "
+				+ afterExtract + " (3 extracted) -> " + afterAbort + " (put back); dirt " + afterSimulated + " (simulated insert) -> " + afterInsert + " (inserted)");
+		if (afterHopper != 8) fails.add("A hopper that can't take an item must not lose it from storage (8 cobblestone -> " + afterHopper + ")");
+		if (afterExtract != 5) fails.add("Lowering a Storage Interface slot's stack must take the items out of storage (8 - 3 -> " + afterExtract + ")");
+		if (afterAbort != 8) fails.add("Writing a Storage Interface slot's stack back must return the items (-> " + afterAbort + ")");
+		if (afterSimulated != 0) fails.add("An insert that is taken back must not be stored (" + afterSimulated + " dirt)");
+		if (afterInsert != 4) fails.add("An insert into the Storage Interface's delivery slot should be stored on its next tick (" + afterInsert + " of 4 dirt)");
+	}
+
 	private static void checkOres(List<String> fails, ServerLevel level, MinecraftServer server) {
 		BlockPos spawn = server.getRespawnData().pos();
 		int uranium = 0, iron = 0, tin = 0, lead = 0, minLeadY = Integer.MAX_VALUE, maxTinY = Integer.MIN_VALUE;

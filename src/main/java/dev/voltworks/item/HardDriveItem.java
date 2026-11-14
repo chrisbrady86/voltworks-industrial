@@ -43,6 +43,20 @@ public class HardDriveItem extends Item {
 		else drive.set(ModComponents.DRIVE_CONTENTS, contents);
 	}
 
+	/** Whether a container item (shulker box, bundle...) has a hard drive with something on it packed inside, at any depth. */
+	public static boolean holdsLoadedDrive(ItemStack stack) {
+		return holdsLoadedDrive(stack, 0);
+	}
+
+	private static boolean holdsLoadedDrive(ItemStack stack, int depth) {
+		if (depth > 0 && stack.getItem() instanceof HardDriveItem) return !contents(stack).entries().isEmpty();
+		if (depth > 16) return true; // absurdly deep nesting: refuse it
+		var container = stack.get(net.minecraft.core.component.DataComponents.CONTAINER);
+		if (container != null && container.nonEmptyItemCopyStream().anyMatch(s -> holdsLoadedDrive(s, depth + 1))) return true;
+		var bundle = stack.get(net.minecraft.core.component.DataComponents.BUNDLE_CONTENTS);
+		return bundle != null && bundle.itemCopies().anyMatch(s -> holdsLoadedDrive(s, depth + 1));
+	}
+
 	/** How many of {@code stack} this drive could still take. */
 	public int room(ItemStack drive, ItemStack stack) {
 		DriveContents c = contents(drive);

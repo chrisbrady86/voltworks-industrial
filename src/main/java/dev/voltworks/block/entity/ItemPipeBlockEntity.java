@@ -155,6 +155,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
 			if (transits.size() >= MAX_TRANSITS) break;
 			Side side = ItemPipeBlock.get(state, dir);
 			BlockPos sourcePos = pos.relative(dir);
+			if (!level.isLoaded(sourcePos)) continue;
 			boolean autoPull = side == Side.CONNECTED && level.getBlockEntity(sourcePos) instanceof PoweredContainerBlockEntity;
 			if (side != Side.EXTRACT && !autoPull) continue;
 			Container source = HopperBlockEntity.getContainerAt(level, sourcePos);
@@ -169,10 +170,16 @@ public class ItemPipeBlockEntity extends BlockEntity {
 	private boolean extract(ServerLevel level, BlockPos pos, Container source, BlockPos sourcePos, Direction dir, boolean autoPull) {
 		Direction face = dir.getOpposite();
 		int[] slots = source instanceof WorldlyContainer w ? w.getSlotsForFace(face) : allSlots(source);
+		List<ItemStack> stuck = new ArrayList<>();
 		for (int slot : slots) {
 			ItemStack stack = source.getItem(slot);
 			if (stack.isEmpty() || !allows(stack)) continue;
 			if (source instanceof WorldlyContainer w && !w.canTakeItemThroughFace(slot, stack, face)) continue;
+			// The same item in an earlier slot had nowhere to go: don't search the network again for it
+			boolean tried = false;
+			for (ItemStack t : stuck) tried |= ItemStack.isSameItemSameComponents(t, stack);
+			if (tried) continue;
+			stuck.add(stack);
 
 			List<Route> routes = findRoutes(level, pos, stack).stream()
 					.filter(r -> !r.pos().equals(sourcePos))
@@ -244,6 +251,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
 				Side side = ItemPipeBlock.get(ps, d);
 				if (!side.isOpen()) continue;
 				BlockPos n = p.relative(d);
+				if (!level.isLoaded(n)) continue; // never load chunks: a line leaving the loaded area ends there
 				BlockState ns = level.getBlockState(n);
 				if (ns.getBlock() instanceof ItemPipeBlock) {
 					if (!ItemPipeBlock.get(ns, d.getOpposite()).isOpen() || parent.containsKey(n)) continue;
@@ -277,6 +285,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
 		for (Iterator<Transit> it = transits.iterator(); it.hasNext(); ) {
 			Transit t = it.next();
 			if (t.arrival() > now) continue;
+			if (!routeLoaded(level, t)) continue; // part of the route is unloaded: wait there until it is back
 			it.remove();
 			changed = true;
 			BlockPos broken = firstMissingPipe(level, t.path());
@@ -303,9 +312,15 @@ public class ItemPipeBlockEntity extends BlockEntity {
 	}
 
 	private static ItemStack insert(Level level, BlockPos pos, Direction face, ItemStack stack) {
+		if (!level.isLoaded(pos)) return stack;
 		Container dest = HopperBlockEntity.getContainerAt(level, pos);
 		if (dest instanceof StorageInterfaceBlockEntity storage) return storage.insert(stack);
 		return dest == null ? stack : HopperBlockEntity.addItem(null, dest, stack, face);
+	}
+
+	private static boolean routeLoaded(Level level, Transit t) {
+		for (BlockPos p : t.path()) if (!level.isLoaded(p)) return false;
+		return level.isLoaded(t.destination());
 	}
 
 	private static BlockPos firstMissingPipe(Level level, List<BlockPos> path) {
